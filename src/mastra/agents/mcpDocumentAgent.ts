@@ -57,22 +57,49 @@ Each plan item should include the chapter title and one-sentence summary derived
 ---
 
 ## 🧠 **Section Content Mapping**
-- context.results.IntroWriterAgent.output → “Kirish”  
-- context.results.TheoryWriterAgent.output → “I BOB”  
-- context.results.AnalysisWriterAgent.output → “II BOB”  
-- context.results.ImprovementWriterAgent.output → “III BOB”  
-- context.results.BibliographyWriterAgent.output → “Foydalanilgan adabiyotlar”
 
-If a section is missing, insert placeholder text:
-> “This section was not provided by the author; reserved for future completion.”
+**IMPORTANT: All section content is stored in the "content" field, NOT in "text" field.**
+
+The input data structure is:
+
+{
+  "chapterTitle": "Main course paper title",
+  "introduction": "Full introduction text...",
+  "conclusion": "Full conclusion text...",
+  "bibliography": "Full bibliography text...",
+  "chapters": [
+    {
+      "chapterTitle": "I BOB - Chapter Title",
+      "sections": [
+        {
+          "title": "1.1 Section Title",
+          "content": "Full section content (1000-1200 words)...",
+          "researchedDatas": "Research data..."
+        }
+      ]
+    }
+  ]
+}
+
+**Critical Rules:**
+- Use section.content for section body text (NOT section.text - that field doesn't exist)
+- Use introduction for "Kirish" section
+- Use chapters[0].sections[].content for "I BOB" (Theory chapter)
+- Use chapters[1].sections[].content for "II BOB" (Analysis chapter)
+- Use chapters[2].sections[].content for "III BOB" (Improvement chapter)
+- Use conclusion for "Xulosa" section
+- Use bibliography for "Foydalanilgan adabiyotlar" section
+
+If a section's content field is missing or empty, insert placeholder text:
+> "This section was not provided by the author; reserved for future completion."
 
 Ensure paragraph normalization and correct spacing between sections.
 
 ---
 
 ## 🧾 **Word Document Creation (API sequence)**
-1. **POST /document/create**  
-   \`\`\`json
+1. **POST /document/create**
+
    {
      "title": "kurs_ishi_<safe-topic>",
      "font": "Times New Roman",
@@ -80,39 +107,37 @@ Ensure paragraph normalization and correct spacing between sections.
      "lineSpacing": 1.5,
      "alignment": "Justify"
    }
-   \`\`\`
 
-2. For each major section:  
-   - \`/document/add_heading\` → Heading 1  
-   - \`/document/add_paragraph\` → body text  
-   - \`/document/page_break\` after each section.
+2. For each major section:
+   - /document/add_heading → Heading 1
+   - /document/add_paragraph → body text
+   - /document/page_break after each section.
 
-3. For subheadings (###, ##, ####):  
-   - \`/document/add_heading\` → Heading 2  
-   - Followed by \`/document/add_paragraph\`.
+3. For subheadings (###, ##, ####):
+   - /document/add_heading → Heading 2
+   - Followed by /document/add_paragraph.
 
-4. After all content:  
-   - \`/document/add_heading\` → “Foydalanilgan adabiyotlar”  
+4. After all content:
+   - /document/add_heading → "Foydalanilgan adabiyotlar"
    - Insert bibliography lines as formatted by BibliographyWriterAgent.
 
-5. If code or SQL fragments exist:  
-   - Add “Appendix A: Example code (for analysis only)”  
+5. If code or SQL fragments exist:
+   - Add "Appendix A: Example code (for analysis only)"
    - Render content as monospace, non-executable text.
 
-6. **Save and return result:**  
-   - \`/document/save\` → return \`fileName\` and \`downloadUrl\`.
+6. **Save and return result:**
+   - /document/save → return fileName and downloadUrl.
 
 ---
 
 ## 🔒 **Safety & Validation**
-- Sanitize \`fileName\`: only \`[a-zA-Z0-9_-]\` allowed.  
-  → \`kurs_ishi_<safe-topic>.docx\`  
-- Strip all markdown, control, and shell characters.  
-- Detect SQL/code snippets → move to Appendix section as “non-executable examples”.  
+- Sanitize fileName: only [a-zA-Z0-9_-] allowed.
+  → kurs_ishi_<safe-topic>.docx
+- Strip all markdown, control, and shell characters.
+- Detect SQL/code snippets → move to Appendix section as "non-executable examples".
 - Reject non-UTF8 or binary input:
-  \`\`\`json
+
   { "error": "Invalid content encoding" }
-  \`\`\`
 - Never execute or interpret code snippets.
 
 ---
@@ -128,18 +153,16 @@ Ensure paragraph normalization and correct spacing between sections.
 
 ## 🧾 **Output Contract**
 If successful:
-\`\`\`json
+
 {
   "message": "Word document generated successfully.",
   "fileName": "kurs_ishi_<safe-topic>.docx",
   "downloadUrl": "https://..."
 }
-\`\`\`
 
 If an error occurs:
-\`\`\`json
+
 { "error": "<clear error message>" }
-\`\`\`
 
 ---
 

@@ -9,7 +9,7 @@ import { analysisWriterAgent } from "../agents/analysisWriterAgent";
 import { improvementWriterAgent } from "../agents/improvementWriterAgent";
 import { conclusionWriterAgent } from "../agents/conclusionWriterAgent";
 import { bibliographyWriterAgent } from "../agents/bibliographyWriterAgent";
-import { MCPDocumentAgent } from "../agents/mcpDocumentAgent";
+import { generateWordDocument } from "../utils/wordDocumentGenerator";
 
 const stepTopicName = createStep({
   id: "step-topic-name",
@@ -50,7 +50,6 @@ const plannerStep = createStep({
         sections: z.array(
           z.object({
             title: z.string(),
-            text: z.string(),
           })
         ),
       })
@@ -73,7 +72,6 @@ const plannerStep = createStep({
                 sections: z.array(
                   z.object({
                     title: z.string(),
-                    text: z.string(),
                   })
                 ),
               })
@@ -83,7 +81,11 @@ const plannerStep = createStep({
       }
     );
 
-    return { name: inputData.name, ...JSON.parse(plan.text), language: inputData.language };
+    return {
+      name: inputData.name,
+      ...JSON.parse(plan.text),
+      language: inputData.language,
+    };
   },
 });
 
@@ -100,7 +102,6 @@ const researchStep = createStep({
         sections: z.array(
           z.object({
             title: z.string(),
-            text: z.string(),
           })
         ),
       })
@@ -116,7 +117,6 @@ const researchStep = createStep({
         sections: z.array(
           z.object({
             title: z.string(),
-            text: z.string(),
             researchedDatas: z.string(),
           })
         ),
@@ -130,18 +130,18 @@ const researchStep = createStep({
     const inputDatas: any = inputData;
     for (const [i, chapter] of inputData.chapters.entries()) {
       for (const [j, section] of chapter.sections.entries()) {
-        const sectionText = `Research this section in ${inputData.language} language:\n\n${section.title}: ${section.text}`;
+        const sectionText = `Research this section in ${inputData.language} language:\n\nTitle: ${section.title}`;
         console.log(sectionText);
-        let researchData = await researchAgent.generate([
-          {
-            role: "user",
-            content: sectionText,
-          },
-        ]);
+        // let researchData = await researchAgent.generate([
+        //   {
+        //     role: "user",
+        //     content: sectionText,
+        //   },
+        // ]);
 
-        inputDatas.chapters[i].sections[j]["researchedDatas"] =
-          researchData.text;
-        console.log(inputDatas.chapters[i].sections[j]);
+        inputDatas.chapters[i].sections[j]["researchedDatas"] = "";
+        // researchData.text;
+        // console.log(inputDatas.chapters[i].sections[j]);
       }
     }
 
@@ -162,7 +162,6 @@ const introStep = createStep({
         sections: z.array(
           z.object({
             title: z.string(),
-            text: z.string(),
             researchedDatas: z.string(),
           })
         ),
@@ -180,7 +179,6 @@ const introStep = createStep({
         sections: z.array(
           z.object({
             title: z.string(),
-            text: z.string(),
             researchedDatas: z.string(),
           })
         ),
@@ -218,7 +216,6 @@ const theoryStep = createStep({
         sections: z.array(
           z.object({
             title: z.string(),
-            text: z.string(),
             researchedDatas: z.string(),
           })
         ),
@@ -236,7 +233,6 @@ const theoryStep = createStep({
         sections: z.array(
           z.object({
             title: z.string(),
-            text: z.string(),
             content: z.string().optional(),
             researchedDatas: z.string(),
           })
@@ -279,7 +275,6 @@ const AnalysisWritingStep = createStep({
         sections: z.array(
           z.object({
             title: z.string(),
-            text: z.string(),
             content: z.string().optional(),
             researchedDatas: z.string(),
           })
@@ -298,7 +293,6 @@ const AnalysisWritingStep = createStep({
         sections: z.array(
           z.object({
             title: z.string(),
-            text: z.string(),
             content: z.string().optional(),
             researchedDatas: z.string(),
           })
@@ -341,7 +335,6 @@ const ImprovementWriterAgent = createStep({
         sections: z.array(
           z.object({
             title: z.string(),
-            text: z.string(),
             content: z.string().optional(),
             researchedDatas: z.string(),
           })
@@ -360,7 +353,6 @@ const ImprovementWriterAgent = createStep({
         sections: z.array(
           z.object({
             title: z.string(),
-            text: z.string(),
             content: z.string(),
             researchedDatas: z.string(),
           })
@@ -403,7 +395,6 @@ const conclusionStep = createStep({
         sections: z.array(
           z.object({
             title: z.string(),
-            text: z.string(),
             content: z.string(),
             researchedDatas: z.string(),
           })
@@ -423,7 +414,6 @@ const conclusionStep = createStep({
         sections: z.array(
           z.object({
             title: z.string(),
-            text: z.string(),
             content: z.string(),
             researchedDatas: z.string(),
           })
@@ -462,7 +452,6 @@ const bibliographyStep = createStep({
         sections: z.array(
           z.object({
             title: z.string(),
-            text: z.string(),
             content: z.string(),
             researchedDatas: z.string(),
           })
@@ -483,7 +472,6 @@ const bibliographyStep = createStep({
         sections: z.array(
           z.object({
             title: z.string(),
-            text: z.string(),
             content: z.string(),
             researchedDatas: z.string(),
           })
@@ -510,7 +498,7 @@ const bibliographyStep = createStep({
 
 const documentStep = createStep({
   id: "document-step",
-  description: "Create Word document using MCP",
+  description: "Create Word document with professional academic formatting",
   inputSchema: z.object({
     name: z.string(),
     chapterTitle: z.string(),
@@ -524,7 +512,6 @@ const documentStep = createStep({
         sections: z.array(
           z.object({
             title: z.string(),
-            text: z.string(),
             content: z.string(),
             researchedDatas: z.string(),
           })
@@ -546,7 +533,6 @@ const documentStep = createStep({
         sections: z.array(
           z.object({
             title: z.string(),
-            text: z.string(),
             content: z.string(),
             researchedDatas: z.string(),
           })
@@ -558,29 +544,45 @@ const documentStep = createStep({
     if (!inputData) {
       throw new Error("Input data not found");
     }
-    const inputDatas: any = inputData;
-    const prompt = `Create a professional academic Word document in ${inputData.language} language using the MCP tools. Format the following content:\n\n${JSON.stringify({
-      chapterTitle: inputData.chapterTitle,
-      introduction: inputData.introduction,
-      conclusion: inputData.conclusion,
-      bibliography: inputData.bibliography,
-      chapters: inputData.chapters,
-    })}\n\nMake sure to follow proper academic formatting and use the MCP tools to create the .docx file.`;
-    const document = await MCPDocumentAgent.generate([
-      {
-        role: "user",
-        content: prompt,
-      },
-    ]);
-    inputDatas["document"] = document.text;
-    return inputDatas;
+
+    try {
+      console.log("📄 Starting Word document generation...");
+
+      // Generate the Word document using our utility function
+      const documentPath = await generateWordDocument({
+        name: inputData.name,
+        chapterTitle: inputData.chapterTitle,
+        language: inputData.language,
+        introduction: inputData.introduction,
+        conclusion: inputData.conclusion,
+        bibliography: inputData.bibliography,
+        chapters: inputData.chapters,
+      });
+
+      console.log(`✅ Document successfully created at: ${documentPath}`);
+
+      // Return the data with document path
+      return {
+        ...inputData,
+        document: documentPath,
+      };
+    } catch (error) {
+      console.error("❌ Error generating document:", error);
+      throw new Error(
+        `Failed to generate Word document: ${error instanceof Error ? error.message : String(error)}`
+      );
+    }
   },
 });
 const writerWorkFlow = createWorkflow({
   id: "writer-work-flow",
   inputSchema: z.object({
     topic: z.string().describe("The topic of the course paper"),
-    language: z.string().describe("The language for writing the course paper (e.g., 'uzbek', 'english', 'russian')"),
+    language: z
+      .string()
+      .describe(
+        "The language for writing the course paper (e.g., 'uzbek', 'english', 'russian')"
+      ),
   }),
   outputSchema: z.object({
     name: z.string(),
@@ -596,7 +598,6 @@ const writerWorkFlow = createWorkflow({
         sections: z.array(
           z.object({
             title: z.string(),
-            text: z.string(),
             content: z.string(),
             researchedDatas: z.string(),
           })

@@ -25,6 +25,7 @@
     "@mastra/loggers": "^0.10.18",
     "@mastra/mcp": "^0.14.1",
     "@mastra/memory": "^0.15.9",
+    "docx": "^8.5.0",
     "zod": "^4.1.12"
   },
   "devDependencies": {
