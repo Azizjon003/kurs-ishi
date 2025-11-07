@@ -10,6 +10,13 @@ import { improvementWriterAgent } from "../agents/improvementWriterAgent";
 import { conclusionWriterAgent } from "../agents/conclusionWriterAgent";
 import { bibliographyWriterAgent } from "../agents/bibliographyWriterAgent";
 import { generateWordDocument } from "../utils/wordDocumentGenerator";
+import {
+  evaluateIntroduction,
+  evaluateChapterSection,
+  evaluateConclusion,
+  generateEvaluationReport,
+  EvaluationResult,
+} from "../utils/contentEvaluator";
 
 const stepTopicName = createStep({
   id: "step-topic-name",
@@ -151,7 +158,7 @@ const researchStep = createStep({
 
 const introStep = createStep({
   id: "intro-step",
-  description: "Write the introduction",
+  description: "Write the introduction with quality evaluation",
   inputSchema: z.object({
     name: z.string(),
     chapterTitle: z.string(),
@@ -184,32 +191,82 @@ const introStep = createStep({
         ),
       })
     ),
+    introductionEvaluation: z.object({
+      passed: z.boolean(),
+      score: z.number(),
+      details: z.string(),
+      attempts: z.number(),
+    }),
   }),
   execute: async ({ inputData }) => {
     if (!inputData) {
       throw new Error("Input data not found");
     }
+
+    console.log("\n" + "=".repeat(60));
+    console.log("✍️  WRITING INTRODUCTION");
+    console.log("=".repeat(60));
+
     const inputDatas: any = inputData;
-    const prompt = `Write an academic introduction in ${inputData.language} language for the following course paper structure:\n\n${JSON.stringify(inputDatas)}`;
-    const introduction = await introWriterAgent.generate([
-      {
-        role: "user",
-        content: prompt,
-      },
-    ]);
-    inputDatas["introduction"] = introduction.text;
+    let attempts = 0;
+    let currentIntro = "";
+    let evaluation: EvaluationResult | undefined;
+
+    // Try up to 3 times to get quality content
+    while (attempts < 3) {
+      attempts++;
+
+      const prompt = attempts === 1
+        ? `Write an academic introduction in ${inputData.language} language for the following course paper structure:\n\n${JSON.stringify(inputDatas)}\n\nIMPORTANT: Ensure high quality, comprehensive coverage, neutral tone, and accurate information.`
+        : `Write an academic introduction in ${inputData.language} language for the following course paper structure:\n\n${JSON.stringify(inputDatas)}\n\nIMPORTANT: Ensure high quality, comprehensive coverage, neutral tone, and accurate information. Previous attempt scored ${((evaluation?.overallScore ?? 0) * 100).toFixed(1)}%. Improve based on feedback: ${evaluation?.details ?? ""}`;
+
+      const introduction = await introWriterAgent.generate([
+        {
+          role: "user",
+          content: prompt,
+        },
+      ]);
+      currentIntro = introduction.text;
+
+      // Evaluate the introduction
+      evaluation = await evaluateIntroduction(currentIntro, inputData.name);
+
+      // If passed, we're done
+      if (evaluation?.passed) {
+        console.log(`✅ Introduction passed quality check on attempt ${attempts}! Score: ${((evaluation.overallScore ?? 0) * 100).toFixed(1)}%`);
+        break;
+      }
+
+      // If not passed and we have retries left, continue
+      if (attempts < 3) {
+        console.log(`⚠️  Introduction quality: ${((evaluation?.overallScore ?? 0) * 100).toFixed(1)}% (below 80%)`);
+        console.log(`🔄 Regenerating introduction (attempt ${attempts + 1})...`);
+      } else {
+        console.log(`⚠️  Introduction accepted after 3 attempts with score: ${((evaluation?.overallScore ?? 0) * 100).toFixed(1)}%`);
+      }
+    }
+
+    inputDatas["introduction"] = currentIntro;
+    inputDatas["introductionEvaluation"] = {
+      passed: evaluation?.passed ?? false,
+      score: evaluation?.overallScore ?? 0,
+      details: evaluation?.details ?? "No evaluation performed",
+      attempts,
+    };
+
     return inputDatas;
   },
 });
 
 const theoryStep = createStep({
   id: "theory-step",
-  description: "Write the theory",
+  description: "Write the theory with quality evaluation",
   inputSchema: z.object({
     name: z.string(),
     chapterTitle: z.string(),
     language: z.string(),
     introduction: z.string(),
+    introductionEvaluation: z.any().optional(),
     chapters: z.array(
       z.object({
         chapterTitle: z.string(),
@@ -227,6 +284,7 @@ const theoryStep = createStep({
     chapterTitle: z.string(),
     language: z.string(),
     introduction: z.string(),
+    introductionEvaluation: z.any().optional(),
     chapters: z.array(
       z.object({
         chapterTitle: z.string(),
@@ -235,6 +293,14 @@ const theoryStep = createStep({
             title: z.string(),
             content: z.string().optional(),
             researchedDatas: z.string(),
+            evaluation: z
+              .object({
+                passed: z.boolean(),
+                score: z.number(),
+                details: z.string(),
+                attempts: z.number(),
+              })
+              .optional(),
           })
         ),
       })
@@ -244,17 +310,64 @@ const theoryStep = createStep({
     if (!inputData) {
       throw new Error("Input data not found");
     }
+
+    console.log("\n" + "=".repeat(60));
+    console.log("✍️  WRITING THEORY CHAPTER");
+    console.log("=".repeat(60));
+
     const inputDatas: any = inputData;
     const chaptesTherory = inputData.chapters[0];
+
     for (const [i, section] of chaptesTherory.sections.entries()) {
-      const prompt = `Write the theoretical content in ${inputData.language} language for this section:\n\n${JSON.stringify(section)}`;
-      const theory = await theoryWriterAgent.generate([
-        {
-          role: "user",
-          content: prompt,
-        },
-      ]);
-      inputDatas.chapters[0].sections[i].content = theory.text;
+      console.log(`\n📝 Section: ${section.title}`);
+
+      let attempts = 0;
+      let currentContent = "";
+      let evaluation: EvaluationResult | undefined;
+
+      // Try up to 2 times per section
+      while (attempts < 2) {
+        attempts++;
+
+        const prompt = attempts === 1
+          ? `Write the theoretical content in ${inputData.language} language for this section:\n\n${JSON.stringify(section)}\n\nIMPORTANT: Ensure high quality, comprehensive coverage, neutral tone, and accurate information. Use tables, diagrams, and formulas where appropriate.`
+          : `Write the theoretical content in ${inputData.language} language for this section:\n\n${JSON.stringify(section)}\n\nIMPORTANT: Previous attempt scored ${((evaluation?.overallScore ?? 0) * 100).toFixed(1)}%. Improve: ${evaluation?.details ?? ""}`;
+
+        const theory = await theoryWriterAgent.generate([
+          {
+            role: "user",
+            content: prompt,
+          },
+        ]);
+        currentContent = theory.text;
+
+        // Evaluate the section
+        evaluation = await evaluateChapterSection(
+          currentContent,
+          section.title,
+          chaptesTherory.chapterTitle
+        );
+
+        // If passed or last attempt, break
+        if (evaluation?.passed || attempts >= 2) {
+          if (evaluation?.passed) {
+            console.log(`  ✅ Section passed (${((evaluation.overallScore ?? 0) * 100).toFixed(1)}%)`);
+          } else {
+            console.log(`  ⚠️  Section quality: ${((evaluation?.overallScore ?? 0) * 100).toFixed(1)}% (accepting best attempt)`);
+          }
+          break;
+        }
+
+        console.log(`  🔄 Regenerating section...`);
+      }
+
+      inputDatas.chapters[0].sections[i].content = currentContent;
+      inputDatas.chapters[0].sections[i].evaluation = {
+        passed: evaluation?.passed ?? false,
+        score: evaluation?.overallScore ?? 0,
+        details: evaluation?.details ?? "No evaluation performed",
+        attempts,
+      };
     }
 
     return inputDatas;
@@ -263,12 +376,13 @@ const theoryStep = createStep({
 
 const AnalysisWritingStep = createStep({
   id: "analysis-writing-step",
-  description: "Write the analysis",
+  description: "Write the analysis with quality evaluation",
   inputSchema: z.object({
     name: z.string(),
     chapterTitle: z.string(),
     language: z.string(),
     introduction: z.string(),
+    introductionEvaluation: z.any().optional(),
     chapters: z.array(
       z.object({
         chapterTitle: z.string(),
@@ -277,6 +391,7 @@ const AnalysisWritingStep = createStep({
             title: z.string(),
             content: z.string().optional(),
             researchedDatas: z.string(),
+            evaluation: z.any().optional(),
           })
         ),
       })
@@ -287,6 +402,7 @@ const AnalysisWritingStep = createStep({
     chapterTitle: z.string(),
     language: z.string(),
     introduction: z.string(),
+    introductionEvaluation: z.any().optional(),
     chapters: z.array(
       z.object({
         chapterTitle: z.string(),
@@ -295,6 +411,7 @@ const AnalysisWritingStep = createStep({
             title: z.string(),
             content: z.string().optional(),
             researchedDatas: z.string(),
+            evaluation: z.any().optional(),
           })
         ),
       })
@@ -304,17 +421,64 @@ const AnalysisWritingStep = createStep({
     if (!inputData) {
       throw new Error("Input data not found");
     }
+
+    console.log("\n" + "=".repeat(60));
+    console.log("✍️  WRITING ANALYSIS CHAPTER");
+    console.log("=".repeat(60));
+
     const inputDatas: any = inputData;
     const chaptersAnalysis = inputData.chapters[1];
+
     for (const [i, section] of chaptersAnalysis.sections.entries()) {
-      const prompt = `Write the analytical content in ${inputData.language} language for this section:\n\n${JSON.stringify(section)}`;
-      const analysis = await analysisWriterAgent.generate([
-        {
-          role: "user",
-          content: prompt,
-        },
-      ]);
-      inputDatas.chapters[1].sections[i].content = analysis.text;
+      console.log(`\n📝 Section: ${section.title}`);
+
+      let attempts = 0;
+      let currentContent = "";
+      let evaluation: EvaluationResult | undefined;
+
+      // Try up to 2 times per section
+      while (attempts < 2) {
+        attempts++;
+
+        const prompt = attempts === 1
+          ? `Write the analytical content in ${inputData.language} language for this section:\n\n${JSON.stringify(section)}\n\nIMPORTANT: Ensure high quality, comprehensive coverage, neutral tone, and accurate information. Use comparison tables, case studies, and data analysis where appropriate.`
+          : `Write the analytical content in ${inputData.language} language for this section:\n\n${JSON.stringify(section)}\n\nIMPORTANT: Previous attempt scored ${((evaluation?.overallScore ?? 0) * 100).toFixed(1)}%. Improve: ${evaluation?.details ?? ""}`;
+
+        const analysis = await analysisWriterAgent.generate([
+          {
+            role: "user",
+            content: prompt,
+          },
+        ]);
+        currentContent = analysis.text;
+
+        // Evaluate the section
+        evaluation = await evaluateChapterSection(
+          currentContent,
+          section.title,
+          chaptersAnalysis.chapterTitle
+        );
+
+        // If passed or last attempt, break
+        if (evaluation?.passed || attempts >= 2) {
+          if (evaluation?.passed) {
+            console.log(`  ✅ Section passed (${((evaluation.overallScore ?? 0) * 100).toFixed(1)}%)`);
+          } else {
+            console.log(`  ⚠️  Section quality: ${((evaluation?.overallScore ?? 0) * 100).toFixed(1)}% (accepting best attempt)`);
+          }
+          break;
+        }
+
+        console.log(`  🔄 Regenerating section...`);
+      }
+
+      inputDatas.chapters[1].sections[i].content = currentContent;
+      inputDatas.chapters[1].sections[i].evaluation = {
+        passed: evaluation?.passed ?? false,
+        score: evaluation?.overallScore ?? 0,
+        details: evaluation?.details ?? "No evaluation performed",
+        attempts,
+      };
     }
 
     return inputDatas;
@@ -323,12 +487,13 @@ const AnalysisWritingStep = createStep({
 
 const ImprovementWriterAgent = createStep({
   id: "improvement-writing-step",
-  description: "Write the improvement proposals",
+  description: "Write the improvement proposals with quality evaluation",
   inputSchema: z.object({
     name: z.string(),
     chapterTitle: z.string(),
     language: z.string(),
     introduction: z.string(),
+    introductionEvaluation: z.any().optional(),
     chapters: z.array(
       z.object({
         chapterTitle: z.string(),
@@ -337,6 +502,7 @@ const ImprovementWriterAgent = createStep({
             title: z.string(),
             content: z.string().optional(),
             researchedDatas: z.string(),
+            evaluation: z.any().optional(),
           })
         ),
       })
@@ -347,6 +513,7 @@ const ImprovementWriterAgent = createStep({
     chapterTitle: z.string(),
     language: z.string(),
     introduction: z.string(),
+    introductionEvaluation: z.any().optional(),
     chapters: z.array(
       z.object({
         chapterTitle: z.string(),
@@ -355,6 +522,7 @@ const ImprovementWriterAgent = createStep({
             title: z.string(),
             content: z.string(),
             researchedDatas: z.string(),
+            evaluation: z.any().optional(),
           })
         ),
       })
@@ -364,17 +532,64 @@ const ImprovementWriterAgent = createStep({
     if (!inputData) {
       throw new Error("Input data not found");
     }
+
+    console.log("\n" + "=".repeat(60));
+    console.log("✍️  WRITING IMPROVEMENT CHAPTER");
+    console.log("=".repeat(60));
+
     const inputDatas: any = inputData;
     const chaptersImprovement = inputData.chapters[2];
+
     for (const [i, section] of chaptersImprovement.sections.entries()) {
-      const prompt = `Write improvement proposals in ${inputData.language} language for this section:\n\n${JSON.stringify(section)}`;
-      const improvement = await improvementWriterAgent.generate([
-        {
-          role: "user",
-          content: prompt,
-        },
-      ]);
-      inputDatas.chapters[2].sections[i].content = improvement.text;
+      console.log(`\n📝 Section: ${section.title}`);
+
+      let attempts = 0;
+      let currentContent = "";
+      let evaluation: EvaluationResult | undefined;
+
+      // Try up to 2 times per section
+      while (attempts < 2) {
+        attempts++;
+
+        const prompt = attempts === 1
+          ? `Write improvement proposals in ${inputData.language} language for this section:\n\n${JSON.stringify(section)}\n\nIMPORTANT: Ensure high quality, comprehensive coverage, neutral tone, and accurate information. Include architecture diagrams, technology specifications, budget tables, and implementation timelines where appropriate.`
+          : `Write improvement proposals in ${inputData.language} language for this section:\n\n${JSON.stringify(section)}\n\nIMPORTANT: Previous attempt scored ${((evaluation?.overallScore ?? 0) * 100).toFixed(1)}%. Improve: ${evaluation?.details ?? ""}`;
+
+        const improvement = await improvementWriterAgent.generate([
+          {
+            role: "user",
+            content: prompt,
+          },
+        ]);
+        currentContent = improvement.text;
+
+        // Evaluate the section
+        evaluation = await evaluateChapterSection(
+          currentContent,
+          section.title,
+          chaptersImprovement.chapterTitle
+        );
+
+        // If passed or last attempt, break
+        if (evaluation?.passed || attempts >= 2) {
+          if (evaluation?.passed) {
+            console.log(`  ✅ Section passed (${((evaluation.overallScore ?? 0) * 100).toFixed(1)}%)`);
+          } else {
+            console.log(`  ⚠️  Section quality: ${((evaluation?.overallScore ?? 0) * 100).toFixed(1)}% (accepting best attempt)`);
+          }
+          break;
+        }
+
+        console.log(`  🔄 Regenerating section...`);
+      }
+
+      inputDatas.chapters[2].sections[i].content = currentContent;
+      inputDatas.chapters[2].sections[i].evaluation = {
+        passed: evaluation?.passed ?? false,
+        score: evaluation?.overallScore ?? 0,
+        details: evaluation?.details ?? "No evaluation performed",
+        attempts,
+      };
     }
 
     return inputDatas;
@@ -383,12 +598,13 @@ const ImprovementWriterAgent = createStep({
 
 const conclusionStep = createStep({
   id: "conclusion-step",
-  description: "Write the conclusion",
+  description: "Write the conclusion with quality evaluation",
   inputSchema: z.object({
     name: z.string(),
     chapterTitle: z.string(),
     language: z.string(),
     introduction: z.string(),
+    introductionEvaluation: z.any().optional(),
     chapters: z.array(
       z.object({
         chapterTitle: z.string(),
@@ -397,6 +613,7 @@ const conclusionStep = createStep({
             title: z.string(),
             content: z.string(),
             researchedDatas: z.string(),
+            evaluation: z.any().optional(),
           })
         ),
       })
@@ -407,7 +624,14 @@ const conclusionStep = createStep({
     chapterTitle: z.string(),
     language: z.string(),
     introduction: z.string(),
+    introductionEvaluation: z.any().optional(),
     conclusion: z.string(),
+    conclusionEvaluation: z.object({
+      passed: z.boolean(),
+      score: z.number(),
+      details: z.string(),
+      attempts: z.number(),
+    }),
     chapters: z.array(
       z.object({
         chapterTitle: z.string(),
@@ -416,6 +640,7 @@ const conclusionStep = createStep({
             title: z.string(),
             content: z.string(),
             researchedDatas: z.string(),
+            evaluation: z.any().optional(),
           })
         ),
       })
@@ -425,15 +650,65 @@ const conclusionStep = createStep({
     if (!inputData) {
       throw new Error("Input data not found");
     }
+
+    console.log("\n" + "=".repeat(60));
+    console.log("✍️  WRITING CONCLUSION");
+    console.log("=".repeat(60));
+
     const inputDatas: any = inputData;
-    const prompt = `Write an academic conclusion in ${inputData.language} language based on the following course paper content:\n\n${JSON.stringify(inputDatas)}`;
-    const conclusion = await conclusionWriterAgent.generate([
-      {
-        role: "user",
-        content: prompt,
-      },
-    ]);
-    inputDatas["conclusion"] = conclusion.text;
+    let attempts = 0;
+    let currentConclusion = "";
+    let evaluation: EvaluationResult | undefined;
+
+    // Create paper summary for evaluation context
+    const paperSummary = `
+      Topic: ${inputData.name}
+      Introduction: ${inputData.introduction.substring(0, 500)}...
+      Chapters: ${inputData.chapters.map((c: any) => c.chapterTitle).join(", ")}
+    `;
+
+    // Try up to 3 times to get quality content
+    while (attempts < 3) {
+      attempts++;
+
+      const prompt = attempts === 1
+        ? `Write an academic conclusion in ${inputData.language} language based on the following course paper content:\n\n${JSON.stringify({ name: inputData.name, chapters: inputData.chapters.map((c: any) => c.chapterTitle) })}\n\nIMPORTANT: Ensure high quality, comprehensive coverage, neutral tone, and accurate information. Summarize key findings and provide recommendations.`
+        : `Write an academic conclusion in ${inputData.language} language based on the following course paper content:\n\n${JSON.stringify({ name: inputData.name, chapters: inputData.chapters.map((c: any) => c.chapterTitle) })}\n\nIMPORTANT: Previous attempt scored ${((evaluation?.overallScore ?? 0) * 100).toFixed(1)}%. Improve based on feedback: ${evaluation?.details ?? ""}`;
+
+      const conclusion = await conclusionWriterAgent.generate([
+        {
+          role: "user",
+          content: prompt,
+        },
+      ]);
+      currentConclusion = conclusion.text;
+
+      // Evaluate the conclusion
+      evaluation = await evaluateConclusion(currentConclusion, paperSummary);
+
+      // If passed, we're done
+      if (evaluation?.passed) {
+        console.log(`✅ Conclusion passed quality check on attempt ${attempts}! Score: ${((evaluation.overallScore ?? 0) * 100).toFixed(1)}%`);
+        break;
+      }
+
+      // If not passed and we have retries left, continue
+      if (attempts < 3) {
+        console.log(`⚠️  Conclusion quality: ${((evaluation?.overallScore ?? 0) * 100).toFixed(1)}% (below 80%)`);
+        console.log(`🔄 Regenerating conclusion (attempt ${attempts + 1})...`);
+      } else {
+        console.log(`⚠️  Conclusion accepted after 3 attempts with score: ${((evaluation?.overallScore ?? 0) * 100).toFixed(1)}%`);
+      }
+    }
+
+    inputDatas["conclusion"] = currentConclusion;
+    inputDatas["conclusionEvaluation"] = {
+      passed: evaluation?.passed ?? false,
+      score: evaluation?.overallScore ?? 0,
+      details: evaluation?.details ?? "No evaluation performed",
+      attempts,
+    };
+
     return inputDatas;
   },
 });
@@ -445,7 +720,9 @@ const bibliographyStep = createStep({
     chapterTitle: z.string(),
     language: z.string(),
     introduction: z.string(),
+    introductionEvaluation: z.any().optional(),
     conclusion: z.string(),
+    conclusionEvaluation: z.any().optional(),
     chapters: z.array(
       z.object({
         chapterTitle: z.string(),
@@ -454,6 +731,7 @@ const bibliographyStep = createStep({
             title: z.string(),
             content: z.string(),
             researchedDatas: z.string(),
+            evaluation: z.any().optional(),
           })
         ),
       })
@@ -464,7 +742,9 @@ const bibliographyStep = createStep({
     chapterTitle: z.string(),
     language: z.string(),
     introduction: z.string(),
+    introductionEvaluation: z.any().optional(),
     conclusion: z.string(),
+    conclusionEvaluation: z.any().optional(),
     bibliography: z.string(),
     chapters: z.array(
       z.object({
@@ -474,6 +754,7 @@ const bibliographyStep = createStep({
             title: z.string(),
             content: z.string(),
             researchedDatas: z.string(),
+            evaluation: z.any().optional(),
           })
         ),
       })
@@ -483,6 +764,11 @@ const bibliographyStep = createStep({
     if (!inputData) {
       throw new Error("Input data not found");
     }
+
+    console.log("\n" + "=".repeat(60));
+    console.log("📚 WRITING BIBLIOGRAPHY");
+    console.log("=".repeat(60));
+
     const inputDatas: any = inputData;
     const prompt = `Create a properly formatted bibliography in ${inputData.language} language based on the following course paper content:\n\n${JSON.stringify(inputDatas)}`;
     const bibliography = await bibliographyWriterAgent.generate([
@@ -496,6 +782,82 @@ const bibliographyStep = createStep({
   },
 });
 
+const qualityReportStep = createStep({
+  id: "quality-report-step",
+  description: "Generate comprehensive quality evaluation report",
+  inputSchema: z.object({
+    name: z.string(),
+    introduction: z.string(),
+    introductionEvaluation: z.any().optional(),
+    conclusion: z.string(),
+    conclusionEvaluation: z.any().optional(),
+    bibliography: z.string(),
+    chapters: z.any(),
+  }),
+  outputSchema: z.object({
+    name: z.string(),
+    introduction: z.string(),
+    introductionEvaluation: z.any().optional(),
+    conclusion: z.string(),
+    conclusionEvaluation: z.any().optional(),
+    bibliography: z.string(),
+    chapters: z.any(),
+    qualityReport: z.string(),
+  }),
+  execute: async ({ inputData }) => {
+    console.log("\n" + "=".repeat(60));
+    console.log("📊 GENERATING QUALITY REPORT");
+    console.log("=".repeat(60));
+
+    const evaluationResults: { [key: string]: EvaluationResult } = {};
+
+    // Add introduction evaluation
+    if (inputData.introductionEvaluation) {
+      evaluationResults["Introduction"] = {
+        passed: inputData.introductionEvaluation.passed,
+        overallScore: inputData.introductionEvaluation.score,
+        metrics: {},
+        details: inputData.introductionEvaluation.details,
+        needsRetry: false,
+      };
+    }
+
+    // Add chapter section evaluations
+    inputData.chapters.forEach((chapter: any) => {
+      chapter.sections.forEach((section: any) => {
+        if (section.evaluation) {
+          evaluationResults[`${chapter.chapterTitle} - ${section.title}`] = {
+            passed: section.evaluation.passed,
+            overallScore: section.evaluation.score,
+            metrics: {},
+            details: section.evaluation.details,
+            needsRetry: false,
+          };
+        }
+      });
+    });
+
+    // Add conclusion evaluation
+    if (inputData.conclusionEvaluation) {
+      evaluationResults["Conclusion"] = {
+        passed: inputData.conclusionEvaluation.passed,
+        overallScore: inputData.conclusionEvaluation.score,
+        metrics: {},
+        details: inputData.conclusionEvaluation.details,
+        needsRetry: false,
+      };
+    }
+
+    const report = generateEvaluationReport(evaluationResults);
+    console.log(report);
+
+    return {
+      ...inputData,
+      qualityReport: report,
+    };
+  },
+});
+
 const documentStep = createStep({
   id: "document-step",
   description: "Create Word document with professional academic formatting",
@@ -504,8 +866,11 @@ const documentStep = createStep({
     chapterTitle: z.string(),
     language: z.string(),
     introduction: z.string(),
+    introductionEvaluation: z.any().optional(),
     conclusion: z.string(),
+    conclusionEvaluation: z.any().optional(),
     bibliography: z.string(),
+    qualityReport: z.string().optional(),
     chapters: z.array(
       z.object({
         chapterTitle: z.string(),
@@ -514,6 +879,7 @@ const documentStep = createStep({
             title: z.string(),
             content: z.string(),
             researchedDatas: z.string(),
+            evaluation: z.any().optional(),
           })
         ),
       })
@@ -524,8 +890,11 @@ const documentStep = createStep({
     chapterTitle: z.string(),
     language: z.string(),
     introduction: z.string(),
+    introductionEvaluation: z.any().optional(),
     conclusion: z.string(),
+    conclusionEvaluation: z.any().optional(),
     bibliography: z.string(),
+    qualityReport: z.string().optional(),
     document: z.string(),
     chapters: z.array(
       z.object({
@@ -535,6 +904,7 @@ const documentStep = createStep({
             title: z.string(),
             content: z.string(),
             researchedDatas: z.string(),
+            evaluation: z.any().optional(),
           })
         ),
       })
@@ -589,8 +959,11 @@ const writerWorkFlow = createWorkflow({
     chapterTitle: z.string(),
     language: z.string(),
     introduction: z.string(),
+    introductionEvaluation: z.any().optional(),
     conclusion: z.string(),
+    conclusionEvaluation: z.any().optional(),
     bibliography: z.string(),
+    qualityReport: z.string().optional(),
     document: z.string(),
     chapters: z.array(
       z.object({
@@ -600,6 +973,7 @@ const writerWorkFlow = createWorkflow({
             title: z.string(),
             content: z.string(),
             researchedDatas: z.string(),
+            evaluation: z.any().optional(),
           })
         ),
       })
@@ -615,6 +989,7 @@ const writerWorkFlow = createWorkflow({
   .then(ImprovementWriterAgent)
   .then(conclusionStep)
   .then(bibliographyStep)
+  .then(qualityReportStep)
   .then(documentStep);
 
 writerWorkFlow.commit();

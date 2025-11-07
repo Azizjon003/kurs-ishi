@@ -162,18 +162,91 @@ Example: "The analyzed solutions demonstrate 70-85% effectiveness in preventing 
 
 ---
 
-🔢 **Visual Elements (Describe in Text):**
+🔢 **Visual Elements - TABLES, DIAGRAMS, FORMULAS:**
 
-When including data visualizations, tables, or charts:
+**IMPORTANT: Use proper markdown table format and special markers for automatic formatting!**
 
-1. **Describe Tables Textually**:
-   Example: "Table 2.1 presents the comparative analysis of five DLP solutions. The first column lists vendor names: Symantec, McAfee, Forcepoint, Digital Guardian, and Proofpoint. The second column shows pricing ranging from $140 to $200 per endpoint annually. The third column indicates market share: Symantec leads at 24%, followed by McAfee at 19%, Forcepoint at 15%, Digital Guardian at 12%, and Proofpoint at 8%..."
+### **1. CREATE ACTUAL TABLES using Markdown Format:**
 
-2. **Describe Charts/Graphs**:
-   Example: "Figure 2.2 illustrates the trend of SQL injection incidents from 2020 to 2024. The line graph shows incidents increasing from 1,823 in 2020 to 2,156 in 2021, then spiking to 2,847 in 2022, before declining slightly to 2,654 in 2023, and reaching 2,401 in 2024. This represents a net 32% increase over the five-year period..."
+**Use this format for comparison tables:**
 
-3. **Describe Architecture Diagrams**:
-   Example: "The system architecture diagram depicts four layers: At the base, the Data Layer contains Oracle databases (primary) and MongoDB (logs). Above it, the Application Layer runs on Spring Boot microservices deployed in Docker containers. The third layer shows the API Gateway (Kong) handling authentication via OAuth 2.0. At the top, the Presentation Layer consists of React web client and Flutter mobile app..."
+\`\`\`markdown
+| Vendor | Pricing | Market Share | Key Features | Performance |
+|--------|---------|--------------|--------------|-------------|
+| Symantec DLP | $150-200/endpoint/year | 24% | Network, endpoint, cloud; 300+ file types | 2-3ms latency; 100GB/hour |
+| McAfee Total Protection | $180-220/endpoint/year | 19% | Cloud-native; ML classification | 2-3M events/sec; Real-time |
+| Forcepoint DLP | $140-170/endpoint/year | 15% | User behavior analytics; Insider threat | Risk scoring; Behavioral analysis |
+\`\`\`
+
+**This will automatically become a professional Word table!**
+
+Example in your text:
+
+"DLP yechimlarining taqqosiy tahlili:
+
+| Vendor | Pricing | Market Share | Deployment | Key Strengths |
+|--------|---------|--------------|------------|---------------|
+| Symantec DLP | $150-200/endpoint | 24% | On-premise, Hybrid | 300+ file types; Advanced content-aware |
+| McAfee DLP | $180-220/endpoint | 19% | Cloud-native | ML classification; Zero-trust support |
+| Forcepoint DLP | $140-170/endpoint | 15% | On-premise, Cloud | Behavior analytics; Insider threat focus |
+
+As shown in the comparison table, Symantec leads in market share..."
+
+### **2. CREATE DIAGRAM DESCRIPTIONS using [DIAGRAM:] marker:**
+
+**Format:**
+\`[DIAGRAM: detailed description here]\`
+
+Example:
+
+"The DLP architecture consists of three main layers:
+
+[DIAGRAM: Three-tier DLP architecture. Bottom layer: Data Discovery Layer with file repository scanners (100GB/hour per agent), 500+ predefined templates, content-aware pattern matching. Middle layer: Policy Engine Layer with 300+ out-of-box policies, custom policy builder, rule versioning, audit trail capability. Top layer: Enforcement Layer with block/allow decisions, logging to SIEM, email alerts, file quarantine, automatic encryption. All layers connected via TLS 1.3 encrypted channels. Central Management Server (RESTful API) orchestrates all components. Arrows show data flow: scanning → policy check → enforcement → logging.]
+
+Each layer performs distinct functions..."
+
+### **3. CREATE FORMULAS using [FORMULA:] marker with LaTeX syntax:**
+
+**IMPORTANT: Use LaTeX format for mathematical formulas!**
+
+**LaTeX Syntax Guide:**
+- Greek letters: \\alpha, \\beta, \\sigma, \\mu, \\pi, \\theta, etc.
+- Subscripts: x_i, a_n, C_{total}
+- Superscripts: x^2, e^{-x}, 10^6
+- Fractions: \\frac{numerator}{denominator}
+- Square root: \\sqrt{x} or \\sqrt[n]{x}
+- Sum: \\sum_{i=1}^{n}
+- Product: \\prod_{i=1}^{n}
+- Integral: \\int_{a}^{b}
+- Operators: \\times, \\div, \\leq, \\geq, \\neq, \\approx
+- Parentheses for grouping: (x + y)^2
+
+**Examples for ROI and Cost Analysis:**
+
+"Cost-benefit analysis for DLP implementation:
+
+[FORMULA: ROI = \\frac{Total\\_Benefits - Total\\_Costs}{Total\\_Costs} \\times 100\\%]
+
+For a 1000-endpoint deployment:
+
+[FORMULA: C_{total} = C_{year1} + C_{year2-3} = \\$580{,}000 + \\$120{,}000]
+
+[FORMULA: B_{total} = B_{breach} + B_{operational} = \\$975{,}000 + \\$97{,}500]
+
+[FORMULA: ROI_{3year} = \\frac{2{,}840{,}000 - 820{,}000}{820{,}000} \\times 100\\% = 246\\%]
+
+The calculation demonstrates strong financial justification..."
+
+**More Examples:**
+
+Detection Rate Improvement:
+[FORMULA: \\Delta D = D_{new} - D_{old} = 95\\% - 72\\% = 23\\%]
+
+False Positive Reduction:
+[FORMULA: FP_{reduction} = \\frac{FP_{old} - FP_{new}}{FP_{old}} \\times 100\\% = \\frac{25 - 10}{25} \\times 100\\% = 60\\%]
+
+Average Cost per Incident:
+[FORMULA: \\overline{C} = \\frac{\\sum_{i=1}^{n} C_i}{n}]
 
 ---
 

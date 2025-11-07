@@ -274,16 +274,85 @@ ALWAYS specify:
 
 ---
 
-🔢 **Visual Elements (Describe in Text):**
+🔢 **Visual Elements - USE MARKDOWN TABLES AND SPECIAL MARKERS:**
 
-1. **Architecture Diagrams** (describe layer by layer):
-   Example: "Figure 3.1 depicts the five-layer architecture. At the bottom, the Data Collection Layer shows web application servers (Apache Tomcat 10.x) connecting to Kafka brokers via TCP (port 9092). Arrows indicate query flow from apps to Kafka topics (partitioned 16-way for parallelism). The second layer, Analysis Layer, contains six Python microservice pods pulling from Kafka consumer groups, each processing 15K queries/sec..."
+**CRITICAL: Use proper formatting for automatic Word table/diagram generation!**
 
-2. **Flowcharts** (describe decision points):
-   Example: "The decision flowchart begins with 'Query Received' (rectangle). First decision diamond: 'Is query cached?' If yes, arrow to 'Retrieve cached result' and END. If no, arrow to 'Send to ML Analyzer'. Next decision: 'Confidence score > 70?' If yes, arrow to 'Block & Alert'; if no, next decision: 'Score > 30?' If yes, 'Log & Allow'; if no, 'Allow'. All paths converge at 'Log to Elasticsearch' before END..."
+### **1. CREATE TABLES using Markdown Format:**
 
-3. **Tables** (describe in structured text):
-   Example: "Table 3.2 compares implementation phases with their durations, costs, and deliverables. Phase 1 (Preparation): 3-4 weeks, $65K-80K, deliverables include architecture documentation and environment setup. Phase 2 (Development): 6-8 weeks, $180K-230K, deliverables include trained ML model and integrated microservices..."
+**Use this for technology comparison, budget, timeline:**
+
+\`\`\`markdown
+| Component | Technology | Version | Justification | Performance |
+|-----------|------------|---------|---------------|-------------|
+| Message Queue | Apache Kafka | 3.6 | High throughput, distributed | 100K+ queries/sec, <5ms latency |
+| ML Framework | TensorFlow | 2.15 | Production-proven, GPU support | 30-50ms inference, 96% accuracy |
+| Microservices | Python | 3.11 | ML ecosystem, async support | 15K queries/sec per pod |
+\`\`\`
+
+Example in your text:
+
+"Technology stack justification:
+
+| Component | Technology | Version | Reason | Expected Performance |
+|-----------|------------|---------|--------|---------------------|
+| Message Queue | Apache Kafka | 3.6 | Distributed, fault-tolerant, high throughput | 100K+ queries/sec |
+| ML Framework | TensorFlow | 2.15 | GPU support, production-ready, extensive library | 30-50ms inference |
+| Backend | Spring Boot | 3.2 | Enterprise-grade, scalable, robust | 50K decisions/sec |
+
+The chosen technologies provide optimal balance..."
+
+### **2. CREATE DIAGRAMS using [DIAGRAM:] marker:**
+
+**For architecture diagrams:**
+
+[DIAGRAM: 5-layer ML-based SQL Injection detection system. Layer 1 (Data Collection): Apache Tomcat 10.x web servers → Node.js 20.x query agents (<1ms overhead) → Kafka 3.6 topics (16 partitions, 100K queries/sec). Layer 2 (ML Analysis): 6 Python 3.11 microservice pods → TensorFlow 2.15 LSTM (3-layer, 256 units, F1=0.96) → 30-50ms inference. Layer 3 (Decision): Spring Boot 3.2 rule engine → Confidence scoring (0-100) → 50K decisions/sec. Layer 4 (Enforcement): ModSecurity 3.x WAF → Block/Allow → <200ms response. Layer 5 (Management): React 18.x dashboard, PostgreSQL 16, Elasticsearch 8.11, Redis 7.2. Arrows show data flow with protocols: TCP 9092 (Kafka), HTTP REST (APIs), WebSocket (real-time).]
+
+### **3. CREATE BUDGET TABLES:**
+
+| Phase | Duration | Team Size | Cost | Key Deliverables |
+|-------|----------|-----------|------|------------------|
+| Phase 1: Preparation | 3-4 weeks | 6 FTE | $65K-80K | Architecture docs, environment setup |
+| Phase 2: Development | 6-8 weeks | 6 FTE | $180K-230K | Trained ML model, integrated services |
+| Phase 3: Pilot | 4 weeks | 4 FTE | $75K-95K | Staging deployment, performance tuning |
+| Phase 4: Rollout | 6-8 weeks | 3 FTE | $90K-120K | Production deployment, team training |
+
+### **4. CREATE FORMULAS using [FORMULA:] marker with LaTeX syntax:**
+
+**IMPORTANT: Use LaTeX format for mathematical formulas!**
+
+**LaTeX Syntax Guide:**
+- Greek letters: \\alpha, \\beta, \\sigma, \\mu, \\pi, \\lambda, \\theta
+- Subscripts: T_{total}, x_i, C_{implementation}
+- Superscripts: x^2, 10^6, e^{-t}
+- Fractions: \\frac{numerator}{denominator}
+- Square root: \\sqrt{x}
+- Sum: \\sum_{i=1}^{n}
+- Operators: \\times, \\leq, \\geq, \\neq, \\approx
+
+**Examples for Performance and Cost Calculations:**
+
+Total Latency Calculation:
+[FORMULA: T_{total} = T_{kafka} + T_{analysis} + T_{decision} + T_{enforcement}]
+
+[FORMULA: T_{total} = 2ms + 45ms + 8ms + 200ms = 255ms]
+
+ROI Formula:
+[FORMULA: ROI = \\frac{Benefits - Costs}{Costs} \\times 100\\%]
+
+[FORMULA: ROI = \\frac{Foyda - Xarajat}{Xarajat} \\times 100\\%]
+
+Throughput Calculation:
+[FORMULA: Throughput = \\frac{N_{queries}}{T_{processing}} = \\frac{100{,}000}{1s} = 100K \\text{ queries/sec}]
+
+Detection Accuracy:
+[FORMULA: Accuracy = \\frac{TP + TN}{TP + TN + FP + FN} \\times 100\\%]
+
+Cost per Transaction:
+[FORMULA: C_{transaction} = \\frac{C_{total\\_annual}}{N_{transactions\\_annual}}]
+
+Response Time Improvement:
+[FORMULA: \\Delta T = T_{old} - T_{new} = 4 \\text{ hours} - 5 \\text{ seconds} = 99.96\\% \\text{ improvement}]
 
 ---
 

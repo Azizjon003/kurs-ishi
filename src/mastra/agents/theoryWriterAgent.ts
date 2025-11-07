@@ -69,7 +69,7 @@ This is the MAIN content. Include:
 
 🔢 **Visual Elements (Describe in Text):**
 
-When the planner specifies diagrams, tables, or charts, you must:
+When the planner specifies diagrams, tables, charts, or formulas, you must:
 
 1. **Describe Diagrams Textually**:
    Example: "Figure 1.1 illustrates the OSI model's seven layers. At the bottom, the Physical Layer (Layer 1) handles raw bit transmission over physical media. Above it, the Data Link Layer (Layer 2) manages node-to-node data transfer with error detection. The Network Layer (Layer 3) routes packets across networks..."
@@ -79,6 +79,53 @@ When the planner specifies diagrams, tables, or charts, you must:
 
 3. **Describe Charts/Graphs**:
    Example: "The data breach statistics from 2020-2024 show an upward trend: 2020 recorded 1,001 breaches affecting 155.8 million records; 2021 saw 1,291 breaches (281.5M records); 2022 reached 1,802 breaches (422M records)..."
+
+4. **Mathematical Formulas** - USE [FORMULA:] marker with LaTeX syntax:
+
+   **IMPORTANT: Use LaTeX format for ALL mathematical formulas!**
+
+   **LaTeX Syntax Reference:**
+   - Greek letters: \\alpha, \\beta, \\gamma, \\delta, \\epsilon, \\sigma, \\mu, \\pi, \\theta, \\lambda, \\omega
+   - Subscripts: x_i, a_n, P_{total}
+   - Superscripts: x^2, e^{-x}, 10^6
+   - Fractions: \\frac{numerator}{denominator}
+   - Square root: \\sqrt{x} or \\sqrt[n]{x}
+   - Sum: \\sum_{i=1}^{n}
+   - Product: \\prod_{i=1}^{n}
+   - Integral: \\int_{a}^{b} f(x)dx
+   - Limit: \\lim_{x \\to \\infty}
+   - Operators: \\times, \\div, \\leq, \\geq, \\neq, \\approx, \\equiv
+   - Set operations: \\cup, \\cap, \\in, \\subset
+
+   **Formula Examples for Theoretical Sections:**
+
+   Statistics and Probability:
+   - Expected value: [FORMULA: E(X) = \\sum_{i=1}^{n} x_i \\cdot p(x_i)]
+   - Variance: [FORMULA: D(X) = E(X^2) - (E(X))^2]
+   - Standard deviation: [FORMULA: \\sigma(X) = \\sqrt{D(X)} = \\sqrt{E(X^2) - (E(X))^2}]
+   - Conditional probability: [FORMULA: P(A|B) = \\frac{P(A \\cap B)}{P(B)}]
+   - Bayes' theorem: [FORMULA: P(A|B) = \\frac{P(B|A) \\cdot P(A)}{P(B)}]
+
+   Calculus and Analysis:
+   - Integration: [FORMULA: \\int_{a}^{b} f(x)dx]
+   - Derivative: [FORMULA: f'(x) = \\lim_{h \\to 0} \\frac{f(x+h) - f(x)}{h}]
+   - Taylor series: [FORMULA: f(x) = \\sum_{n=0}^{\\infty} \\frac{f^{(n)}(a)}{n!}(x-a)^n]
+
+   Information Theory:
+   - Entropy: [FORMULA: H(X) = -\\sum_{i=1}^{n} p(x_i) \\log_2 p(x_i)]
+   - Shannon capacity: [FORMULA: C = B \\log_2(1 + \\frac{S}{N})]
+
+   Complexity and Performance:
+   - Big O notation: [FORMULA: T(n) = O(n^2)]
+   - Response time: [FORMULA: T_{response} = T_{queue} + T_{service}]
+   - Throughput: [FORMULA: \\lambda = \\frac{N}{T}]
+
+   **Usage in text:**
+   "Matematik kutilma quyidagi formula orqali hisoblanadi:
+
+   [FORMULA: E(X) = \\sum_{i=1}^{n} x_i \\cdot p(x_i)]
+
+   bu yerda E(X) - kutilma, x_i - i-chi hodisa, p(x_i) - uning ehtimoli..."
 
 ---
 

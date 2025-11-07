@@ -6,9 +6,26 @@ import {
   AlignmentType,
   PageBreak,
   convertInchesToTwip,
+  Table,
+  TableRow,
+  TableCell,
+  WidthType,
+  BorderStyle,
+  VerticalAlign,
+  Shading,
+  ShadingType,
 } from "docx";
 import * as fs from "fs";
 import * as path from "path";
+import {
+  createAcademicTable,
+  createDiagramDescription,
+  createFormulaDisplay,
+  parseEnhancedContent,
+  TableData,
+  DiagramData,
+  FormulaData,
+} from "./advancedWordFeatures";
 
 /**
  * Interface for section data structure
@@ -322,10 +339,10 @@ function createTableOfContents(data: CoursePaperData): Paragraph[] {
 }
 
 /**
- * Create paragraphs from text content
- * Handles markdown formatting and long text blocks
+ * Create paragraphs from text content with enhanced support for tables, diagrams, formulas
+ * Handles markdown formatting, tables, diagrams, and formulas
  */
-function createParagraphs(text: string): Paragraph[] {
+function createParagraphs(text: string): (Paragraph | Table)[] {
   if (!text || text.trim() === "") {
     return [
       new Paragraph({
@@ -346,65 +363,88 @@ function createParagraphs(text: string): Paragraph[] {
     ];
   }
 
-  // Clean markdown symbols
-  const cleanText = text
-    .replace(/#{1,6}\s/g, "") // Remove markdown headers
-    .replace(/\*\*(.+?)\*\*/g, "$1") // Remove bold markdown
-    .replace(/\*(.+?)\*/g, "$1") // Remove italic markdown
-    .replace(/`{1,3}(.+?)`{1,3}/g, "$1") // Remove code blocks
-    .trim();
+  // Parse content for enhanced elements (tables, diagrams, formulas)
+  const elements = parseEnhancedContent(text);
+  const result: (Paragraph | Table)[] = [];
 
-  // Split into paragraphs (by double newline or single newline)
-  const paragraphs = cleanText
-    .split(/\n\n+|\n/)
-    .filter((p) => p.trim() !== "")
-    .map(
-      (paragraph) =>
-        new Paragraph({
-          children: [
-            new TextRun({
-              text: paragraph.trim(),
-              font: "Times New Roman",
-              size: 28, // 14pt = 28 half-points
-              color: "000000", // Black color
-            }),
-          ],
-          alignment: AlignmentType.JUSTIFIED,
-          spacing: {
-            line: 360, // 1.5 line spacing
-            after: 200,
-          },
-          indent: {
-            firstLine: convertInchesToTwip(0.5), // First line indent
-          },
-        })
-    );
+  for (const element of elements) {
+    if (element.type === "table") {
+      // Add table
+      const tableElements = createAcademicTable(element.data);
+      result.push(...tableElements);
+    } else if (element.type === "diagram") {
+      // Add diagram description
+      const diagramParas = createDiagramDescription(element.data);
+      result.push(...diagramParas);
+    } else if (element.type === "formula") {
+      // Add formula display
+      const formulaParas = createFormulaDisplay(element.data);
+      result.push(...formulaParas);
+    } else {
+      // Regular text - clean markdown and create paragraphs
+      const cleanText = element.data
+        .replace(/#{1,6}\s/g, "") // Remove markdown headers
+        .replace(/\*\*(.+?)\*\*/g, "$1") // Remove bold markdown
+        .replace(/\*(.+?)\*/g, "$1") // Remove italic markdown
+        .replace(/`{1,3}(.+?)`{1,3}/g, "$1") // Remove code blocks
+        .trim();
 
-  return paragraphs;
+      // Split into paragraphs
+      const paragraphs = cleanText
+        .split(/\n\n+|\n/)
+        .filter((p) => p.trim() !== "")
+        .map(
+          (paragraph) =>
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: paragraph.trim(),
+                  font: "Times New Roman",
+                  size: 28, // 14pt
+                  color: "000000", // Black color
+                }),
+              ],
+              alignment: AlignmentType.JUSTIFIED,
+              spacing: {
+                line: 360, // 1.5 line spacing
+                after: 200,
+              },
+              indent: {
+                firstLine: convertInchesToTwip(0.5), // First line indent
+              },
+            })
+        );
+
+      result.push(...paragraphs);
+    }
+  }
+
+  return result;
 }
 
 /**
  * Create chapter content with sections
+ * Supports tables, diagrams, and formulas
  */
 function createChapterContent(
   chapter: Chapter,
   chapterNumber: number
-): Paragraph[] {
-  const paragraphs: Paragraph[] = [];
+): (Paragraph | Table)[] {
+  const elements: (Paragraph | Table)[] = [];
 
   // Chapter title
-  paragraphs.push(createHeading1(chapter.chapterTitle.toUpperCase()));
+  elements.push(createHeading1(chapter.chapterTitle.toUpperCase()));
 
   // Sections
   chapter.sections.forEach((section) => {
     // Section title
-    paragraphs.push(createHeading2(section.title));
+    elements.push(createHeading2(section.title));
 
     // Section content
     if (section.content && section.content.trim() !== "") {
-      paragraphs.push(...createParagraphs(section.content));
+      elements.push(...createParagraphs(section.content));
     } else {
-      paragraphs.push(
+      elements.push(
         new Paragraph({
           children: [
             new TextRun({
@@ -424,7 +464,7 @@ function createChapterContent(
     }
 
     // Add spacing between sections
-    paragraphs.push(
+    elements.push(
       new Paragraph({
         text: "",
         spacing: { after: 240 },
@@ -432,7 +472,7 @@ function createChapterContent(
     );
   });
 
-  return paragraphs;
+  return elements;
 }
 
 /**
