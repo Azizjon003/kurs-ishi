@@ -1,0 +1,407 @@
+{
+  "info": {
+    "name": "Academic Paper Generator API",
+    "description": "REST API for generating academic course papers using AI",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "version": "1.0.0"
+  },
+  "auth": {
+    "type": "apikey",
+    "apikey": [
+      {
+        "key": "key",
+        "value": "X-API-Key",
+        "type": "string"
+      },
+      {
+        "key": "value",
+        "value": "{{api_key}}",
+        "type": "string"
+      },
+      {
+        "key": "in",
+        "value": "header",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/health",
+              "host": ["{{base_url}}"],
+              "path": ["health"]
+            },
+            "description": "Check API health status"
+          },
+          "response": []
+        },
+        {
+          "name": "Readiness Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/health/ready",
+              "host": ["{{base_url}}"],
+              "path": ["health", "ready"]
+            },
+            "description": "Check if API is ready to accept requests"
+          },
+          "response": []
+        },
+        {
+          "name": "Liveness Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/health/live",
+              "host": ["{{base_url}}"],
+              "path": ["health", "live"]
+            },
+            "description": "Check if API is alive"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Workflow",
+      "item": [
+        {
+          "name": "Create Workflow (Uzbek)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 202) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.environment.set(\"job_id\", jsonData.data.jobId);",
+                  "    console.log(\"Job ID saved: \" + jsonData.data.jobId);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"topic\": \"Matematik kutilma va dispersiya\",\n  \"language\": \"uzbek\",\n  \"pageCount\": 30,\n  \"studentName\": \"Alisher Navoiy\",\n  \"studentCourse\": 4,\n  \"universityName\": \"O'ZBEKISTON MILLIY UNIVERSITETI\",\n  \"facultyName\": \"Matematika fakulteti\",\n  \"departmentName\": \"Amaliy matematika yo'nalishi\",\n  \"subjectName\": \"MATEMATIKA\",\n  \"advisorName\": \"Professor Mirzo Ulug'bek\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/workflow",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "workflow"]
+            },
+            "description": "Create a new academic paper generation job in Uzbek"
+          },
+          "response": []
+        },
+        {
+          "name": "Create Workflow (English)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 202) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.environment.set(\"job_id\", jsonData.data.jobId);",
+                  "    console.log(\"Job ID saved: \" + jsonData.data.jobId);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"topic\": \"SQL Injection Vulnerabilities in Modern Web Applications\",\n  \"language\": \"english\",\n  \"pageCount\": 35,\n  \"studentName\": \"John Doe\",\n  \"studentCourse\": 3,\n  \"universityName\": \"University of Technology\",\n  \"facultyName\": \"Computer Science Faculty\",\n  \"subjectName\": \"Cybersecurity\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/workflow",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "workflow"]
+            },
+            "description": "Create a new academic paper generation job in English"
+          },
+          "response": []
+        },
+        {
+          "name": "Create Workflow (Russian)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 202) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.environment.set(\"job_id\", jsonData.data.jobId);",
+                  "    console.log(\"Job ID saved: \" + jsonData.data.jobId);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"topic\": \"Искусственный интеллект в медицине\",\n  \"language\": \"russian\",\n  \"pageCount\": 30,\n  \"studentName\": \"Иван Иванов\",\n  \"studentCourse\": 4\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/workflow",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "workflow"]
+            },
+            "description": "Create a new academic paper generation job in Russian"
+          },
+          "response": []
+        },
+        {
+          "name": "Create Workflow with Webhook",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 202) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.environment.set(\"job_id\", jsonData.data.jobId);",
+                  "    console.log(\"Job ID saved: \" + jsonData.data.jobId);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"topic\": \"Machine Learning Fundamentals\",\n  \"language\": \"english\",\n  \"pageCount\": 30,\n  \"webhookUrl\": \"https://webhook.site/your-unique-url\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/workflow",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "workflow"]
+            },
+            "description": "Create a workflow with webhook notification"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Workflow Status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/workflow/{{job_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "workflow", "{{job_id}}"]
+            },
+            "description": "Get the status of a specific job"
+          },
+          "response": []
+        },
+        {
+          "name": "List All Workflows",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/workflow?limit=50&offset=0",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "workflow"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "50"
+                },
+                {
+                  "key": "offset",
+                  "value": "0"
+                },
+                {
+                  "key": "status",
+                  "value": "completed",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Get a paginated list of all workflows"
+          },
+          "response": []
+        },
+        {
+          "name": "List Completed Workflows",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/workflow?status=completed&limit=20",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "workflow"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "completed"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Get completed workflows only"
+          },
+          "response": []
+        },
+        {
+          "name": "Download Document",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/workflow/{{job_id}}/download",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "workflow", "{{job_id}}", "download"]
+            },
+            "description": "Download the generated Word document"
+          },
+          "response": []
+        },
+        {
+          "name": "Cancel Workflow",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/workflow/{{job_id}}/cancel",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "workflow", "{{job_id}}", "cancel"]
+            },
+            "description": "Cancel a pending workflow job"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Workflow",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/workflow/{{job_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "workflow", "{{job_id}}"]
+            },
+            "description": "Delete a completed or failed workflow job"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Queue Statistics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/workflow/queue/stats",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "workflow", "queue", "stats"]
+            },
+            "description": "Get job queue statistics"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Documentation",
+      "item": [
+        {
+          "name": "API Documentation",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/docs",
+              "host": ["{{base_url}}"],
+              "path": ["docs"]
+            },
+            "description": "View API documentation homepage"
+          },
+          "response": []
+        },
+        {
+          "name": "OpenAPI Specification",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/docs/openapi",
+              "host": ["{{base_url}}"],
+              "path": ["docs", "openapi"]
+            },
+            "description": "Get OpenAPI 3.0 specification in JSON"
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "api_key",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "job_id",
+      "value": "",
+      "type": "string"
+    }
+  ]
+}

@@ -6,7 +6,10 @@
       "Bash(cat:*)",
       "Bash(npx tsc:*)",
       "Bash(tasklist:*)",
-      "Bash(python -c:*)"
+      "Bash(python -c:*)",
+      "Bash(npm run api:*)",
+      "Bash(curl:*)",
+      "Bash(npx kill-port:*)"
     ],
     "deny": [],
     "ask": []
