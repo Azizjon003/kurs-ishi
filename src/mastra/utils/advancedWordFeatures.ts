@@ -633,7 +633,11 @@ export function parseEnhancedContent(content: string): {
       continue;
     }
     // Detect table start (markdown table format)
-    if (line.trim().match(/^\|.*\|$/)) {
+    // Tables start with | and end with |, can have spaces
+    const isTableLine = line.trim().match(/^\s*\|.*\|\s*$/);
+
+    if (isTableLine && !inTable) {
+      // Starting a new table
       if (currentText.trim()) {
         elements.push({ type: "text", data: currentText.trim() });
         currentText = "";
@@ -641,20 +645,31 @@ export function parseEnhancedContent(content: string): {
       inTable = true;
       tableLines.push(line);
     } else if (inTable) {
-      if (line.trim().match(/^\|.*\|$/)) {
+      if (isTableLine) {
+        // Continue table
         tableLines.push(line);
       } else {
         // End of table
         if (tableLines.length >= 2) {
-          // Parse table
+          // Parse table (need at least header + separator, ideally + 1 data row)
           const tableData = parseMarkdownTable(tableLines);
           if (tableData) {
             elements.push({ type: "table", data: tableData });
+          } else {
+            // If parsing failed, treat as regular text
+            currentText += tableLines.join("\n") + "\n";
           }
+        } else {
+          // Not enough lines for a table, treat as text
+          currentText += tableLines.join("\n") + "\n";
         }
         inTable = false;
         tableLines = [];
-        currentText += line + "\n";
+
+        // Add current line to text if not empty
+        if (line.trim()) {
+          currentText += line + "\n";
+        }
       }
     }
     // Detect diagram marker
@@ -696,17 +711,23 @@ export function parseEnhancedContent(content: string): {
     }
   }
 
-  // Add remaining text
-  if (currentText.trim()) {
-    elements.push({ type: "text", data: currentText.trim() });
-  }
-
-  // Handle final table
+  // Handle final table if content ends while in table
   if (inTable && tableLines.length >= 2) {
     const tableData = parseMarkdownTable(tableLines);
     if (tableData) {
       elements.push({ type: "table", data: tableData });
+    } else {
+      // If parsing failed, add as text
+      currentText += tableLines.join("\n") + "\n";
     }
+  } else if (inTable && tableLines.length > 0) {
+    // Table not complete, add as text
+    currentText += tableLines.join("\n") + "\n";
+  }
+
+  // Add remaining text
+  if (currentText.trim()) {
+    elements.push({ type: "text", data: currentText.trim() });
   }
 
   return elements;
@@ -714,31 +735,61 @@ export function parseEnhancedContent(content: string): {
 
 /**
  * Parse markdown table format into TableData
+ * Supports standard markdown table format:
+ * | Header 1 | Header 2 |
+ * |----------|----------|
+ * | Cell 1   | Cell 2   |
  */
 function parseMarkdownTable(lines: string[]): TableData | null {
   if (lines.length < 2) return null;
 
   // Remove leading/trailing pipes and split
-  const parseRow = (line: string) =>
-    line
+  const parseRow = (line: string) => {
+    const cleaned = line
       .trim()
-      .replace(/^\|/, "")
-      .replace(/\|$/, "")
-      .split("|")
-      .map((cell) => cell.trim());
+      .replace(/^\|/, "")  // Remove leading pipe
+      .replace(/\|$/, "");  // Remove trailing pipe
 
+    return cleaned
+      .split("|")
+      .map((cell) => cell.trim())
+      .filter((cell) => cell.length > 0 || cleaned.includes("||")); // Keep empty cells if table has ||
+  };
+
+  // Parse header row
   const headers = parseRow(lines[0]);
 
-  // Skip separator line (line with dashes)
-  const dataLines = lines.slice(2);
+  if (headers.length === 0) return null;
+
+  // Find separator line (contains dashes and pipes)
+  let separatorIndex = -1;
+  for (let i = 1; i < lines.length; i++) {
+    if (lines[i].trim().match(/^[\|\s\-:]+$/)) {
+      separatorIndex = i;
+      break;
+    }
+  }
+
+  // If no separator found, assume line 1 is separator (standard markdown)
+  if (separatorIndex === -1) {
+    separatorIndex = 1;
+  }
+
+  // Get data rows (everything after separator)
+  const dataLines = lines.slice(separatorIndex + 1).filter(line => line.trim().match(/^\|.*\|$/));
 
   if (dataLines.length === 0) return null;
 
   const rows = dataLines.map(parseRow);
 
+  // Validate that all rows have same column count as headers
+  const validRows = rows.filter(row => row.length === headers.length);
+
+  if (validRows.length === 0) return null;
+
   return {
     headers,
-    rows,
+    rows: validRows,
   };
 }
 

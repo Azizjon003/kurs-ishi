@@ -598,57 +598,80 @@ function createParagraphs(text: string): (Paragraph | Table)[] {
         .replace(/\*(.+?)\*/g, "$1") // Remove italic markdown
         .trim();
 
-      // Split into paragraphs and process inline code
+      // Split into paragraphs and process inline code and formulas
       const paragraphs = cleanText
         .split(/\n\n+|\n/)
         .filter((p) => p.trim() !== "")
         .map((paragraph) => {
           const textRuns: TextRun[] = [];
 
-          // Process inline code: `code` → monospace font
-          const parts = paragraph.split(/(`[^`]+`)/g);
+          // First, split by [FORMULA: ...] pattern
+          const formulaParts = paragraph.split(/(\[FORMULA:\s*[^\]]+\])/g);
 
-          for (const part of parts) {
-            if (part.startsWith("`") && part.endsWith("`")) {
-              // Inline code
-              textRuns.push(
-                new TextRun({
-                  text: part.slice(1, -1), // Remove backticks
-                  font: "Courier New",
-                  size: 26, // 13pt (slightly smaller)
-                  color: "C7254E", // Red-ish color for code
-                  shading: {
-                    type: ShadingType.SOLID,
-                    color: "F9F2F4", // Light pink background
-                  },
-                })
-              );
-            } else if (part.trim()) {
-              // Detect inline LaTeX formulas and convert to Unicode
-              // Check if contains LaTeX commands: \frac, \sum, \int, Greek letters, etc.
-              const hasLatex = /\\[a-zA-Z]+/.test(part);
-
-              if (hasLatex) {
-                // Convert LaTeX to Unicode
-                const convertedText = convertLatexToUnicode(part);
+          for (const formulaPart of formulaParts) {
+            if (formulaPart.startsWith("[FORMULA:")) {
+              // Extract LaTeX formula from [FORMULA: latex_code]
+              const latexMatch = formulaPart.match(/\[FORMULA:\s*([^\]]+)\]/);
+              if (latexMatch) {
+                const latexCode = latexMatch[1].trim();
+                const convertedFormula = convertLatexToUnicode(latexCode);
                 textRuns.push(
                   new TextRun({
-                    text: convertedText,
-                    font: "Times New Roman",
+                    text: convertedFormula,
+                    font: "Cambria Math",
                     size: 28, // 14pt
-                    color: "000000", // Black color
+                    color: "000000",
+                    italics: true,
                   })
                 );
-              } else {
-                // Regular text without LaTeX
-                textRuns.push(
-                  new TextRun({
-                    text: part,
-                    font: "Times New Roman",
-                    size: 28, // 14pt
-                    color: "000000", // Black color
-                  })
-                );
+              }
+            } else {
+              // Process inline code: `code` → monospace font
+              const parts = formulaPart.split(/(`[^`]+`)/g);
+
+              for (const part of parts) {
+                if (part.startsWith("`") && part.endsWith("`")) {
+                  // Inline code
+                  textRuns.push(
+                    new TextRun({
+                      text: part.slice(1, -1), // Remove backticks
+                      font: "Courier New",
+                      size: 26, // 13pt (slightly smaller)
+                      color: "C7254E", // Red-ish color for code
+                      shading: {
+                        type: ShadingType.SOLID,
+                        color: "F9F2F4", // Light pink background
+                      },
+                    })
+                  );
+                } else if (part.trim()) {
+                  // Detect inline LaTeX formulas and convert to Unicode
+                  // Check if contains LaTeX commands: \frac, \sum, \int, Greek letters, etc.
+                  const hasLatex = /\\[a-zA-Z]+/.test(part);
+
+                  if (hasLatex) {
+                    // Convert LaTeX to Unicode
+                    const convertedText = convertLatexToUnicode(part);
+                    textRuns.push(
+                      new TextRun({
+                        text: convertedText,
+                        font: "Times New Roman",
+                        size: 28, // 14pt
+                        color: "000000", // Black color
+                      })
+                    );
+                  } else {
+                    // Regular text without LaTeX
+                    textRuns.push(
+                      new TextRun({
+                        text: part,
+                        font: "Times New Roman",
+                        size: 28, // 14pt
+                        color: "000000", // Black color
+                      })
+                    );
+                  }
+                }
               }
             }
           }
