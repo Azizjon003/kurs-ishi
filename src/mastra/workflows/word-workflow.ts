@@ -229,8 +229,14 @@ const researchStep = createStep({
     for (const [i, chapter] of inputData.chapters.entries()) {
       for (const [j, section] of chapter.sections.entries()) {
         const sectionText = `Research this section in ${inputData.language} language:\n\nTitle: ${section.title}`;
-        console.log(sectionText);
-        inputDatas.chapters[i].sections[j]["researchedDatas"] = "";
+        const researchData = await researchAgent.generate([
+          {
+            role: "user",
+            content: sectionText,
+          },
+        ]);
+        inputDatas.chapters[i].sections[j]["researchedDatas"] =
+          researchData.text;
       }
     }
 
@@ -314,9 +320,10 @@ const introStep = createStep({
     while (attempts < 3) {
       attempts++;
 
-      const prompt = attempts === 1
-        ? `Write an academic introduction in ${inputData.language} language for the following course paper structure:\n\n${JSON.stringify(inputDatas)}\n\nIMPORTANT: Ensure high quality, comprehensive coverage, neutral tone, and accurate information.`
-        : `Write an academic introduction in ${inputData.language} language for the following course paper structure:\n\n${JSON.stringify(inputDatas)}\n\nIMPORTANT: Ensure high quality, comprehensive coverage, neutral tone, and accurate information. Previous attempt scored ${((evaluation?.overallScore ?? 0) * 100).toFixed(1)}%. Improve based on feedback: ${evaluation?.details ?? ""}`;
+      const prompt =
+        attempts === 1
+          ? `Write an academic introduction in ${inputData.language} language for the following course paper structure:\n\n${JSON.stringify(inputDatas)}\n\nIMPORTANT: Ensure high quality, comprehensive coverage, neutral tone, and accurate information.`
+          : `Write an academic introduction in ${inputData.language} language for the following course paper structure:\n\n${JSON.stringify(inputDatas)}\n\nIMPORTANT: Ensure high quality, comprehensive coverage, neutral tone, and accurate information. Previous attempt scored ${((evaluation?.overallScore ?? 0) * 100).toFixed(1)}%. Improve based on feedback: ${evaluation?.details ?? ""}`;
 
       const introduction = await introWriterAgent.generate([
         {
@@ -331,16 +338,24 @@ const introStep = createStep({
 
       // If passed, we're done
       if (evaluation?.passed) {
-        console.log(`✅ Introduction passed quality check on attempt ${attempts}! Score: ${((evaluation.overallScore ?? 0) * 100).toFixed(1)}%`);
+        console.log(
+          `✅ Introduction passed quality check on attempt ${attempts}! Score: ${((evaluation.overallScore ?? 0) * 100).toFixed(1)}%`
+        );
         break;
       }
 
       // If not passed and we have retries left, continue
       if (attempts < 3) {
-        console.log(`⚠️  Introduction quality: ${((evaluation?.overallScore ?? 0) * 100).toFixed(1)}% (below 80%)`);
-        console.log(`🔄 Regenerating introduction (attempt ${attempts + 1})...`);
+        console.log(
+          `⚠️  Introduction quality: ${((evaluation?.overallScore ?? 0) * 100).toFixed(1)}% (below 80%)`
+        );
+        console.log(
+          `🔄 Regenerating introduction (attempt ${attempts + 1})...`
+        );
       } else {
-        console.log(`⚠️  Introduction accepted after 3 attempts with score: ${((evaluation?.overallScore ?? 0) * 100).toFixed(1)}%`);
+        console.log(
+          `⚠️  Introduction accepted after 3 attempts with score: ${((evaluation?.overallScore ?? 0) * 100).toFixed(1)}%`
+        );
       }
     }
 
@@ -427,9 +442,10 @@ const theoryStep = createStep({
       while (attempts < 2) {
         attempts++;
 
-        const prompt = attempts === 1
-          ? `Write the theoretical content in ${inputData.language} language for this section:\n\n${JSON.stringify(section)}\n\nIMPORTANT: Ensure high quality, comprehensive coverage, neutral tone, and accurate information. Use tables, diagrams, and formulas where appropriate.`
-          : `Write the theoretical content in ${inputData.language} language for this section:\n\n${JSON.stringify(section)}\n\nIMPORTANT: Previous attempt scored ${((evaluation?.overallScore ?? 0) * 100).toFixed(1)}%. Improve: ${evaluation?.details ?? ""}`;
+        const prompt =
+          attempts === 1
+            ? `Write the theoretical content in ${inputData.language} language for this section:\n\n${JSON.stringify(section)}\n\nIMPORTANT: Ensure high quality, comprehensive coverage, neutral tone, and accurate information. Use tables, diagrams, and formulas where appropriate.`
+            : `Write the theoretical content in ${inputData.language} language for this section:\n\n${JSON.stringify(section)}\n\nIMPORTANT: Previous attempt scored ${((evaluation?.overallScore ?? 0) * 100).toFixed(1)}%. Improve: ${evaluation?.details ?? ""}`;
 
         const theory = await theoryWriterAgent.generate([
           {
@@ -449,9 +465,13 @@ const theoryStep = createStep({
         // If passed or last attempt, break
         if (evaluation?.passed || attempts >= 2) {
           if (evaluation?.passed) {
-            console.log(`  ✅ Section passed (${((evaluation.overallScore ?? 0) * 100).toFixed(1)}%)`);
+            console.log(
+              `  ✅ Section passed (${((evaluation.overallScore ?? 0) * 100).toFixed(1)}%)`
+            );
           } else {
-            console.log(`  ⚠️  Section quality: ${((evaluation?.overallScore ?? 0) * 100).toFixed(1)}% (accepting best attempt)`);
+            console.log(
+              `  ⚠️  Section quality: ${((evaluation?.overallScore ?? 0) * 100).toFixed(1)}% (accepting best attempt)`
+            );
           }
           break;
         }
@@ -538,9 +558,10 @@ const AnalysisWritingStep = createStep({
       while (attempts < 2) {
         attempts++;
 
-        const prompt = attempts === 1
-          ? `Write the analytical content in ${inputData.language} language for this section:\n\n${JSON.stringify(section)}\n\nIMPORTANT: Ensure high quality, comprehensive coverage, neutral tone, and accurate information. Use comparison tables, case studies, and data analysis where appropriate.`
-          : `Write the analytical content in ${inputData.language} language for this section:\n\n${JSON.stringify(section)}\n\nIMPORTANT: Previous attempt scored ${((evaluation?.overallScore ?? 0) * 100).toFixed(1)}%. Improve: ${evaluation?.details ?? ""}`;
+        const prompt =
+          attempts === 1
+            ? `Write the analytical content in ${inputData.language} language for this section:\n\n${JSON.stringify(section)}\n\nIMPORTANT: Ensure high quality, comprehensive coverage, neutral tone, and accurate information. Use comparison tables, case studies, and data analysis where appropriate.`
+            : `Write the analytical content in ${inputData.language} language for this section:\n\n${JSON.stringify(section)}\n\nIMPORTANT: Previous attempt scored ${((evaluation?.overallScore ?? 0) * 100).toFixed(1)}%. Improve: ${evaluation?.details ?? ""}`;
 
         const analysis = await analysisWriterAgent.generate([
           {
@@ -560,9 +581,13 @@ const AnalysisWritingStep = createStep({
         // If passed or last attempt, break
         if (evaluation?.passed || attempts >= 2) {
           if (evaluation?.passed) {
-            console.log(`  ✅ Section passed (${((evaluation.overallScore ?? 0) * 100).toFixed(1)}%)`);
+            console.log(
+              `  ✅ Section passed (${((evaluation.overallScore ?? 0) * 100).toFixed(1)}%)`
+            );
           } else {
-            console.log(`  ⚠️  Section quality: ${((evaluation?.overallScore ?? 0) * 100).toFixed(1)}% (accepting best attempt)`);
+            console.log(
+              `  ⚠️  Section quality: ${((evaluation?.overallScore ?? 0) * 100).toFixed(1)}% (accepting best attempt)`
+            );
           }
           break;
         }
@@ -653,72 +678,91 @@ const parallelChaptersStep = createStep({
     const inputDatas: any = { ...inputData };
 
     // Process all three chapters in parallel
-    const chapterPromises = inputData.chapters.map(async (chapter, chapterIndex) => {
-      const chapterType = chapterIndex === 0 ? "THEORY" : chapterIndex === 1 ? "ANALYSIS" : "IMPROVEMENT";
-      const agent = chapterIndex === 0 ? theoryWriterAgent : chapterIndex === 1 ? analysisWriterAgent : improvementWriterAgent;
+    const chapterPromises = inputData.chapters.map(
+      async (chapter, chapterIndex) => {
+        const chapterType =
+          chapterIndex === 0
+            ? "THEORY"
+            : chapterIndex === 1
+              ? "ANALYSIS"
+              : "IMPROVEMENT";
+        const agent =
+          chapterIndex === 0
+            ? theoryWriterAgent
+            : chapterIndex === 1
+              ? analysisWriterAgent
+              : improvementWriterAgent;
 
-      console.log(`\n📚 Starting ${chapterType} Chapter: ${chapter.chapterTitle}`);
+        console.log(
+          `\n📚 Starting ${chapterType} Chapter: ${chapter.chapterTitle}`
+        );
 
-      const processedSections = [];
+        const processedSections = [];
 
-      for (const [sectionIndex, section] of chapter.sections.entries()) {
-        console.log(`\n📝 ${chapterType} - Section: ${section.title}`);
+        for (const [sectionIndex, section] of chapter.sections.entries()) {
+          console.log(`\n📝 ${chapterType} - Section: ${section.title}`);
 
-        let attempts = 0;
-        let currentContent = "";
-        let evaluation: EvaluationResult | undefined;
+          let attempts = 0;
+          let currentContent = "";
+          let evaluation: EvaluationResult | undefined;
 
-        // Try up to 2 times per section
-        while (attempts < 2) {
-          attempts++;
+          // Try up to 2 times per section
+          while (attempts < 2) {
+            attempts++;
 
-          const prompt = attempts === 1
-            ? `Write the ${chapterType.toLowerCase()} content in ${inputData.language} language for this section:\n\n${JSON.stringify(section)}\n\nIMPORTANT: Ensure high quality, comprehensive coverage, neutral tone, and accurate information.`
-            : `Write the ${chapterType.toLowerCase()} content in ${inputData.language} language for this section:\n\n${JSON.stringify(section)}\n\nIMPORTANT: Previous attempt scored ${((evaluation?.overallScore ?? 0) * 100).toFixed(1)}%. Improve: ${evaluation?.details ?? ""}`;
+            const prompt =
+              attempts === 1
+                ? `Write the ${chapterType.toLowerCase()} content in ${inputData.language} language for this section:\n\n${JSON.stringify(section)}\n\nIMPORTANT: Ensure high quality, comprehensive coverage, neutral tone, and accurate information.`
+                : `Write the ${chapterType.toLowerCase()} content in ${inputData.language} language for this section:\n\n${JSON.stringify(section)}\n\nIMPORTANT: Previous attempt scored ${((evaluation?.overallScore ?? 0) * 100).toFixed(1)}%. Improve: ${evaluation?.details ?? ""}`;
 
-          const content = await agent.generate([
-            {
-              role: "user",
-              content: prompt,
-            },
-          ]);
-          currentContent = content.text;
+            const content = await agent.generate([
+              {
+                role: "user",
+                content: prompt,
+              },
+            ]);
+            currentContent = content.text;
 
-          // Evaluate the section
-          evaluation = await evaluateChapterSection(
-            currentContent,
-            section.title,
-            chapter.chapterTitle
-          );
+            // Evaluate the section
+            evaluation = await evaluateChapterSection(
+              currentContent,
+              section.title,
+              chapter.chapterTitle
+            );
 
-          // If passed or last attempt, break
-          if (evaluation?.passed || attempts >= 2) {
-            if (evaluation?.passed) {
-              console.log(`  ✅ ${chapterType} section passed (${((evaluation.overallScore ?? 0) * 100).toFixed(1)}%)`);
-            } else {
-              console.log(`  ⚠️  ${chapterType} section quality: ${((evaluation?.overallScore ?? 0) * 100).toFixed(1)}% (accepting best attempt)`);
+            // If passed or last attempt, break
+            if (evaluation?.passed || attempts >= 2) {
+              if (evaluation?.passed) {
+                console.log(
+                  `  ✅ ${chapterType} section passed (${((evaluation.overallScore ?? 0) * 100).toFixed(1)}%)`
+                );
+              } else {
+                console.log(
+                  `  ⚠️  ${chapterType} section quality: ${((evaluation?.overallScore ?? 0) * 100).toFixed(1)}% (accepting best attempt)`
+                );
+              }
+              break;
             }
-            break;
+
+            console.log(`  🔄 Regenerating ${chapterType} section...`);
           }
 
-          console.log(`  🔄 Regenerating ${chapterType} section...`);
+          processedSections.push({
+            ...section,
+            content: currentContent,
+            evaluation: {
+              passed: evaluation?.passed ?? false,
+              score: evaluation?.overallScore ?? 0,
+              details: evaluation?.details ?? "No evaluation performed",
+              attempts,
+            },
+          });
         }
 
-        processedSections.push({
-          ...section,
-          content: currentContent,
-          evaluation: {
-            passed: evaluation?.passed ?? false,
-            score: evaluation?.overallScore ?? 0,
-            details: evaluation?.details ?? "No evaluation performed",
-            attempts,
-          },
-        });
+        console.log(`✅ ${chapterType} Chapter completed!`);
+        return processedSections;
       }
-
-      console.log(`✅ ${chapterType} Chapter completed!`);
-      return processedSections;
-    });
+    );
 
     // Wait for all chapters to complete
     const allProcessedSections = await Promise.all(chapterPromises);
@@ -803,9 +847,10 @@ const ImprovementWriterAgent = createStep({
       while (attempts < 2) {
         attempts++;
 
-        const prompt = attempts === 1
-          ? `Write improvement proposals in ${inputData.language} language for this section:\n\n${JSON.stringify(section)}\n\nIMPORTANT: Ensure high quality, comprehensive coverage, neutral tone, and accurate information. Include architecture diagrams, technology specifications, budget tables, and implementation timelines where appropriate.`
-          : `Write improvement proposals in ${inputData.language} language for this section:\n\n${JSON.stringify(section)}\n\nIMPORTANT: Previous attempt scored ${((evaluation?.overallScore ?? 0) * 100).toFixed(1)}%. Improve: ${evaluation?.details ?? ""}`;
+        const prompt =
+          attempts === 1
+            ? `Write improvement proposals in ${inputData.language} language for this section:\n\n${JSON.stringify(section)}\n\nIMPORTANT: Ensure high quality, comprehensive coverage, neutral tone, and accurate information. Include architecture diagrams, technology specifications, budget tables, and implementation timelines where appropriate.`
+            : `Write improvement proposals in ${inputData.language} language for this section:\n\n${JSON.stringify(section)}\n\nIMPORTANT: Previous attempt scored ${((evaluation?.overallScore ?? 0) * 100).toFixed(1)}%. Improve: ${evaluation?.details ?? ""}`;
 
         const improvement = await improvementWriterAgent.generate([
           {
@@ -825,9 +870,13 @@ const ImprovementWriterAgent = createStep({
         // If passed or last attempt, break
         if (evaluation?.passed || attempts >= 2) {
           if (evaluation?.passed) {
-            console.log(`  ✅ Section passed (${((evaluation.overallScore ?? 0) * 100).toFixed(1)}%)`);
+            console.log(
+              `  ✅ Section passed (${((evaluation.overallScore ?? 0) * 100).toFixed(1)}%)`
+            );
           } else {
-            console.log(`  ⚠️  Section quality: ${((evaluation?.overallScore ?? 0) * 100).toFixed(1)}% (accepting best attempt)`);
+            console.log(
+              `  ⚠️  Section quality: ${((evaluation?.overallScore ?? 0) * 100).toFixed(1)}% (accepting best attempt)`
+            );
           }
           break;
         }
@@ -939,9 +988,10 @@ const conclusionStep = createStep({
     while (attempts < 3) {
       attempts++;
 
-      const prompt = attempts === 1
-        ? `Write an academic conclusion in ${inputData.language} language based on the following course paper content:\n\n${JSON.stringify({ name: inputData.name, chapters: inputData.chapters.map((c: any) => c.chapterTitle) })}\n\nIMPORTANT: Ensure high quality, comprehensive coverage, neutral tone, and accurate information. Summarize key findings and provide recommendations.`
-        : `Write an academic conclusion in ${inputData.language} language based on the following course paper content:\n\n${JSON.stringify({ name: inputData.name, chapters: inputData.chapters.map((c: any) => c.chapterTitle) })}\n\nIMPORTANT: Previous attempt scored ${((evaluation?.overallScore ?? 0) * 100).toFixed(1)}%. Improve based on feedback: ${evaluation?.details ?? ""}`;
+      const prompt =
+        attempts === 1
+          ? `Write an academic conclusion in ${inputData.language} language based on the following course paper content:\n\n${JSON.stringify({ name: inputData.name, chapters: inputData.chapters.map((c: any) => c.chapterTitle) })}\n\nIMPORTANT: Ensure high quality, comprehensive coverage, neutral tone, and accurate information. Summarize key findings and provide recommendations.`
+          : `Write an academic conclusion in ${inputData.language} language based on the following course paper content:\n\n${JSON.stringify({ name: inputData.name, chapters: inputData.chapters.map((c: any) => c.chapterTitle) })}\n\nIMPORTANT: Previous attempt scored ${((evaluation?.overallScore ?? 0) * 100).toFixed(1)}%. Improve based on feedback: ${evaluation?.details ?? ""}`;
 
       const conclusion = await conclusionWriterAgent.generate([
         {
@@ -956,16 +1006,22 @@ const conclusionStep = createStep({
 
       // If passed, we're done
       if (evaluation?.passed) {
-        console.log(`✅ Conclusion passed quality check on attempt ${attempts}! Score: ${((evaluation.overallScore ?? 0) * 100).toFixed(1)}%`);
+        console.log(
+          `✅ Conclusion passed quality check on attempt ${attempts}! Score: ${((evaluation.overallScore ?? 0) * 100).toFixed(1)}%`
+        );
         break;
       }
 
       // If not passed and we have retries left, continue
       if (attempts < 3) {
-        console.log(`⚠️  Conclusion quality: ${((evaluation?.overallScore ?? 0) * 100).toFixed(1)}% (below 80%)`);
+        console.log(
+          `⚠️  Conclusion quality: ${((evaluation?.overallScore ?? 0) * 100).toFixed(1)}% (below 80%)`
+        );
         console.log(`🔄 Regenerating conclusion (attempt ${attempts + 1})...`);
       } else {
-        console.log(`⚠️  Conclusion accepted after 3 attempts with score: ${((evaluation?.overallScore ?? 0) * 100).toFixed(1)}%`);
+        console.log(
+          `⚠️  Conclusion accepted after 3 attempts with score: ${((evaluation?.overallScore ?? 0) * 100).toFixed(1)}%`
+        );
       }
     }
 
@@ -1225,7 +1281,7 @@ const pageCountStep = createStep({
 
     // Validate page count
     const validation = validatePageCount(pageEstimate);
-    console.log(`\n${validation.valid ? '✅' : '⚠️ '} ${validation.message}\n`);
+    console.log(`\n${validation.valid ? "✅" : "⚠️ "} ${validation.message}\n`);
 
     return {
       ...inputData,
@@ -1361,10 +1417,7 @@ const writerWorkFlow = createWorkflow({
       .string()
       .optional()
       .describe("Department name (default: Amaliy matematika yo'nalishi)"),
-    studentName: z
-      .string()
-      .optional()
-      .describe("Student full name"),
+    studentName: z.string().optional().describe("Student full name"),
     studentCourse: z
       .number()
       .optional()
@@ -1373,10 +1426,7 @@ const writerWorkFlow = createWorkflow({
       .string()
       .optional()
       .describe("Subject name (default: MATEMATIKA)"),
-    advisorName: z
-      .string()
-      .optional()
-      .describe("Scientific advisor name"),
+    advisorName: z.string().optional().describe("Scientific advisor name"),
   }),
   outputSchema: z.object({
     name: z.string(),

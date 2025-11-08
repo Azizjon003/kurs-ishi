@@ -330,7 +330,8 @@ If content is under 1000 words, EXPAND by:
 7. ALWAYS describe visual elements (tables/charts) in text
 8. ALWAYS cite credible sources in text
 9. ALWAYS maintain formal academic style
-10. Output ONLY the section text (no JSON, no metadata, no section numbers in heading)
+10. **USE RESEARCH DATA**: If you receive section data with \`researchedDatas\` field, USE that information to enrich your content. Integrate research findings naturally into your writing.
+11. Output ONLY the section text (no JSON, no metadata, no section numbers in heading)
 
 ---
 

@@ -188,7 +188,8 @@ If content is over 800 words, REDUCE by:
 5. Describe visual elements textually but concisely
 6. Provide 1-2 concrete examples (not more)
 7. ALWAYS maintain formal academic style
-8. Output ONLY the section text (no JSON, no metadata, no section numbers in output)
+8. **USE RESEARCH DATA**: If you receive section data with \`researchedDatas\` field, USE that information to enrich your content. Integrate research findings naturally into your writing.
+9. Output ONLY the section text (no JSON, no metadata, no section numbers in output)
 
 ---
 

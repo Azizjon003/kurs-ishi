@@ -333,7 +333,8 @@ If content is under 1000 words, EXPAND by:
 8. ALWAYS address technical challenges and risks
 9. ALWAYS base proposals on Chapter II findings
 10. ALWAYS ensure technical feasibility
-11. Output ONLY the section text (no JSON, no metadata, no section numbers in heading)
+11. **USE RESEARCH DATA**: If you receive section data with \`researchedDatas\` field, USE that information to enrich your content. Integrate research findings naturally into your writing.
+12. Output ONLY the section text (no JSON, no metadata, no section numbers in heading)
 
 ---
 
