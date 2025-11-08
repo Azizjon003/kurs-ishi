@@ -96,6 +96,9 @@ export async function generateWordDocument(
       ? path.join(outputPath, fileName)
       : path.join(process.cwd(), fileName);
 
+    // Get language-specific headers
+    const langHeaders = getLanguageHeaders(data.language);
+
     // Pre-generate chapter content with images (async operations)
     console.log("📝 Generating chapters with images...");
     const chapter1Content = await createChapterContent(data.chapters[0], 1);
@@ -132,11 +135,11 @@ export async function generateWordDocument(
             createPageBreak(),
 
             // Table of Contents (Plan)
-            ...createTableOfContents(data),
+            ...createTableOfContents(data, langHeaders),
             createPageBreak(),
 
             // Introduction (Kirish)
-            createHeading1("KIRISH"),
+            createHeading1(langHeaders.introduction),
             ...createParagraphs(data.introduction),
             createPageBreak(),
 
@@ -153,12 +156,12 @@ export async function generateWordDocument(
             createPageBreak(),
 
             // Conclusion (Xulosa)
-            createHeading1("XULOSA"),
+            createHeading1(langHeaders.conclusion),
             ...createParagraphs(data.conclusion),
             createPageBreak(),
 
             // Bibliography (Foydalanilgan adabiyotlar)
-            createHeading1("FOYDALANILGAN ADABIYOTLAR"),
+            createHeading1(langHeaders.bibliography),
             ...createBibliography(data.bibliography),
           ],
         },
@@ -177,6 +180,35 @@ export async function generateWordDocument(
       `Failed to generate Word document: ${error instanceof Error ? error.message : String(error)}`
     );
   }
+}
+
+/**
+ * Get language-specific headers for document sections
+ */
+function getLanguageHeaders(language: string) {
+  const headers: Record<string, Record<string, string>> = {
+    uzbek: {
+      tableOfContents: "MUNDARIJA",
+      introduction: "KIRISH",
+      conclusion: "XULOSA",
+      bibliography: "FOYDALANILGAN ADABIYOTLAR",
+    },
+    english: {
+      tableOfContents: "TABLE OF CONTENTS",
+      introduction: "INTRODUCTION",
+      conclusion: "CONCLUSION",
+      bibliography: "BIBLIOGRAPHY",
+    },
+    russian: {
+      tableOfContents: "СОДЕРЖАНИЕ",
+      introduction: "ВВЕДЕНИЕ",
+      conclusion: "ЗАКЛЮЧЕНИЕ",
+      bibliography: "СПИСОК ЛИТЕРАТУРЫ",
+    },
+  };
+
+  const lang = language.toLowerCase();
+  return headers[lang] || headers.uzbek;
 }
 
 /**
@@ -445,9 +477,12 @@ function createPageBreak(): Paragraph {
 /**
  * Create table of contents
  */
-function createTableOfContents(data: CoursePaperData): Paragraph[] {
+function createTableOfContents(
+  data: CoursePaperData,
+  langHeaders: Record<string, string>
+): Paragraph[] {
   const paragraphs: Paragraph[] = [
-    createHeading1("REJA (MUNDARIJA)"),
+    createHeading1(langHeaders.tableOfContents),
     new Paragraph({
       text: "",
       spacing: { after: 200 },
@@ -459,7 +494,7 @@ function createTableOfContents(data: CoursePaperData): Paragraph[] {
     new Paragraph({
       children: [
         new TextRun({
-          text: "KIRISH",
+          text: langHeaders.introduction,
           font: "Times New Roman",
           size: 28, // 14pt
           color: "000000",
@@ -514,7 +549,7 @@ function createTableOfContents(data: CoursePaperData): Paragraph[] {
     new Paragraph({
       children: [
         new TextRun({
-          text: "XULOSA",
+          text: langHeaders.conclusion,
           font: "Times New Roman",
           size: 28, // 14pt
           color: "000000",
@@ -530,7 +565,7 @@ function createTableOfContents(data: CoursePaperData): Paragraph[] {
     new Paragraph({
       children: [
         new TextRun({
-          text: "FOYDALANILGAN ADABIYOTLAR",
+          text: langHeaders.bibliography,
           font: "Times New Roman",
           size: 28, // 14pt
           color: "000000",

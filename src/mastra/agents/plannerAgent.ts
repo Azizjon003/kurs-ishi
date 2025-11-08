@@ -23,25 +23,25 @@ export const plannerAgent = new Agent({
 
   **CRITICAL: Each section must be detailed enough to produce 3-4 pages of content**
 
-  1. **Chapter I — Nazariy asoslar (Theoretical Foundations)** [15-20 pages]
-     - Must have 4-5 detailed subsections
+  1. **Chapter I — Nazariy asoslar (Theoretical Foundations)** [10-12 pages]
+     - Must have EXACTLY 3 sections (1.1, 1.2, 1.3)
      - Include: definitions, classifications, existing approaches, methodologies
      - Require diagrams/tables for comparison
-     - Each subsection = 3-4 pages minimum
+     - Each section = 3-4 pages minimum
 
-  2. **Chapter II — Amaliy/Tahliliy qism (Practical/Analytical Section)** [15-20 pages]
-     - Must have 4-5 detailed subsections
+  2. **Chapter II — Amaliy/Tahliliy qism (Practical/Analytical Section)** [10-12 pages]
+     - Must have EXACTLY 3 sections (2.1, 2.2, 2.3)
      - Include: case studies, data analysis, implementation examples
      - Require tables, charts, comparative analysis
      - Real-world examples and statistics
-     - Each subsection = 3-4 pages minimum
+     - Each section = 3-4 pages minimum
 
   3. **Chapter III — Takomillashtirish takliflari (Improvement Proposals)** [10-12 pages]
-     - Must have 3-4 detailed subsections
+     - Must have EXACTLY 3 sections (3.1, 3.2, 3.3)
      - Include: identified problems, proposed solutions, architecture/design
      - Require diagrams, algorithms, implementation plans
      - Code examples where applicable
-     - Each subsection = 3-4 pages minimum
+     - Each section = 3-4 pages minimum
 
   ---
 
@@ -71,27 +71,42 @@ export const plannerAgent = new Agent({
         "chapterTitle": "I BOB. NAZARIY ASOSLAR",
         "sections": [
           {
-            "title": "1.1 Comprehensive and Specific Section Title That Clearly Indicates Content"
+            "title": "1.1 First Section Title"
           },
-          // ... 4-5 sections total for Chapter I
+          {
+            "title": "1.2 Second Section Title"
+          },
+          {
+            "title": "1.3 Third Section Title"
+          }
         ]
       },
       {
         "chapterTitle": "II BOB. AMALIY/TAHLILIY QISM",
         "sections": [
           {
-            "title": "2.1 Comprehensive and Specific Section Title"
+            "title": "2.1 First Section Title"
           },
-          // ... 4-5 sections total for Chapter II
+          {
+            "title": "2.2 Second Section Title"
+          },
+          {
+            "title": "2.3 Third Section Title"
+          }
         ]
       },
       {
         "chapterTitle": "III BOB. TAKOMILLASHTIRISH TAKLIFLARI",
         "sections": [
           {
-            "title": "3.1 Comprehensive and Specific Section Title"
+            "title": "3.1 First Section Title"
           },
-          // ... 3-4 sections total for Chapter III
+          {
+            "title": "3.2 Second Section Title"
+          },
+          {
+            "title": "3.3 Third Section Title"
+          }
         ]
       }
     ]
@@ -103,7 +118,10 @@ export const plannerAgent = new Agent({
   - NEVER create sections with vague titles
   - ALWAYS make titles specific and comprehensive
   - Title should clearly indicate what content will cover
-  - Total sections: 12-14 (not 9!)
+  - Total sections: EXACTLY 9 (3 for Chapter I, 3 for Chapter II, 3 for Chapter III)
+  - Each chapter MUST have EXACTLY 3 sections (1.1-1.3, 2.1-2.3, 3.1-3.3)
+  - DO NOT create more than 3 sections per chapter
+  - DO NOT create subsections (no 1.1.1, 1.1.2, etc.)
   - Each section MUST be substantial enough for 3-4 pages
   - Do NOT include "text" field - only "title"
   
