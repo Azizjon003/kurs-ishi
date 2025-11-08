@@ -354,6 +354,53 @@ Cost per Transaction:
 Response Time Improvement:
 [FORMULA: \\Delta T = T_{old} - T_{new} = 4 \\text{ hours} - 5 \\text{ seconds} = 99.96\\% \\text{ improvement}]
 
+### **5. CODE EXAMPLES using markdown code blocks:**
+
+**IMPORTANT: Use proper markdown syntax!**
+
+**Architecture/Implementation code:**
+\`\`\`python
+# Configuration example
+CONFIG = {
+    'kafka_servers': ['localhost:9092'],
+    'ml_model': 'lstm_v2.h5',
+    'threshold': 0.7
+}
+\`\`\`
+
+**Inline code:**
+Use backticks for \`server.py\`, \`config.yaml\`, \`API_KEY\` in text.
+
+**Example:**
+
+"Tavsiya etilayotgan tizimni \`Python 3.11\` va \`TensorFlow 2.15\` yordamida joriy qilish mumkin:
+
+\`\`\`python
+import tensorflow as tf
+from kafka import KafkaConsumer
+
+# Load trained LSTM model
+model = tf.keras.models.load_model('sql_injection_detector.h5')
+
+# Connect to Kafka
+consumer = KafkaConsumer(
+    'sql_queries',
+    bootstrap_servers=['localhost:9092'],
+    auto_offset_reset='latest'
+)
+
+# Process queries in real-time
+for message in consumer:
+    query = message.value.decode('utf-8')
+    prediction = model.predict([query])
+
+    if prediction > 0.7:
+        print(f"ALERT: Suspicious query detected - {query}")
+        block_query(query)
+\`\`\`
+
+Ushbu kod \`KafkaConsumer\` yordamida so'rovlarni real-time rejimida tekshiradi. \`model.predict()\` funksiyasi har bir so'rovning xavfliligini baholaydi..."
+
 ---
 
 📚 **Academic Standards:**

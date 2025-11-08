@@ -41,6 +41,15 @@ export interface FormulaData {
 }
 
 /**
+ * Interface for code block
+ */
+export interface CodeBlockData {
+  code: string;
+  language?: string;
+  caption?: string;
+}
+
+/**
  * Create a professional academic table
  *
  * @param tableData - Table structure with headers and rows
@@ -255,7 +264,7 @@ export function createDiagramDescription(
  * @param latex - LaTeX formula string
  * @returns Unicode formatted string
  */
-function convertLatexToUnicode(latex: string): string {
+export function convertLatexToUnicode(latex: string): string {
   let result = latex;
 
   // Remove LaTeX delimiters first
@@ -307,10 +316,30 @@ function convertLatexToUnicode(latex: string): string {
     result = result.replace(new RegExp(latex.replace(/\\/g, "\\\\"), "g"), unicode);
   }
 
-  // Handle fractions: \frac{a}{b} → (a)/(b)
+  // Handle fractions: \frac{a}{b} → a/b (using fraction slash)
   result = result.replace(/\\frac\{([^{}]*(?:\{[^{}]*\}[^{}]*)*)\}\{([^{}]*(?:\{[^{}]*\}[^{}]*)*)\}/g, (match, num, den) => {
-    // Recursively process nested content
-    return `(${num})/(${den})`;
+    // Use fraction slash ⁄ for better visual
+    // For simple single-digit fractions, use Unicode fractions if available
+    const simpleNum = num.trim();
+    const simpleDen = den.trim();
+
+    // Unicode fraction mapping
+    const unicodeFractions: { [key: string]: string } = {
+      "1/2": "½", "1/3": "⅓", "2/3": "⅔",
+      "1/4": "¼", "3/4": "¾",
+      "1/5": "⅕", "2/5": "⅖", "3/5": "⅗", "4/5": "⅘",
+      "1/6": "⅙", "5/6": "⅚",
+      "1/7": "⅐", "1/8": "⅛", "3/8": "⅜", "5/8": "⅝", "7/8": "⅞",
+      "1/9": "⅑", "1/10": "⅒"
+    };
+
+    const fractionKey = `${simpleNum}/${simpleDen}`;
+    if (unicodeFractions[fractionKey]) {
+      return unicodeFractions[fractionKey];
+    }
+
+    // For complex fractions, use cleaner format with fraction slash
+    return `${num}⁄${den}`;
   });
 
   // Handle square root: \sqrt{x} → √(x) or \sqrt[n]{x} → ⁿ√(x)
@@ -449,22 +478,102 @@ export function createFormulaDisplay(formulaData: FormulaData): Paragraph[] {
 }
 
 /**
- * Parse content and detect tables, formulas, diagrams
+ * Create code block display
+ *
+ * @param codeData - Code block information
+ * @returns Paragraphs with formatted code block
+ */
+export function createCodeBlock(codeData: CodeBlockData): Paragraph[] {
+  const paragraphs: Paragraph[] = [];
+
+  // Add language caption if provided
+  if (codeData.language) {
+    paragraphs.push(
+      new Paragraph({
+        children: [
+          new TextRun({
+            text: `Code (${codeData.language}):`,
+            font: "Courier New",
+            size: 24, // 12pt
+            bold: true,
+            color: "2C3E50",
+          }),
+        ],
+        spacing: {
+          before: 160,
+          after: 80,
+        },
+      })
+    );
+  }
+
+  // Code block with background
+  const codeLines = codeData.code.split("\n");
+  for (const line of codeLines) {
+    paragraphs.push(
+      new Paragraph({
+        children: [
+          new TextRun({
+            text: line || " ", // Empty line needs space
+            font: "Courier New",
+            size: 24, // 12pt
+            color: "2C3E50",
+          }),
+        ],
+        shading: {
+          type: ShadingType.SOLID,
+          color: "F5F5F5", // Light gray background
+        },
+        spacing: {
+          after: 0,
+          line: 276, // Single line spacing for code
+        },
+        indent: {
+          left: convertInchesToTwip(0.3),
+          right: convertInchesToTwip(0.3),
+        },
+        border: {
+          top: { style: BorderStyle.SINGLE, size: 1, color: "D0D0D0" },
+          bottom: { style: BorderStyle.SINGLE, size: 1, color: "D0D0D0" },
+          left: { style: BorderStyle.SINGLE, size: 6, color: "3498DB" }, // Blue left border
+          right: { style: BorderStyle.SINGLE, size: 1, color: "D0D0D0" },
+        },
+      })
+    );
+  }
+
+  // Add spacing after code block
+  paragraphs.push(
+    new Paragraph({
+      text: "",
+      spacing: { after: 200 },
+    })
+  );
+
+  return paragraphs;
+}
+
+/**
+ * Parse content and detect tables, formulas, diagrams, code blocks
  * Returns structured content elements
  */
 export function parseEnhancedContent(content: string): {
-  type: "text" | "table" | "diagram" | "formula";
+  type: "text" | "table" | "diagram" | "formula" | "code";
   data: any;
 }[] {
   const elements: {
-    type: "text" | "table" | "diagram" | "formula";
+    type: "text" | "table" | "diagram" | "formula" | "code";
     data: any;
   }[] = [];
 
-  // First, extract all formulas (LaTeX display \[...\] and inline \(...\))
-  // Replace them with placeholders to avoid processing them as text
-  const formulaPlaceholders: string[] = [];
+  // First, extract code blocks ```language ... ```
   let processedContent = content;
+  processedContent = processedContent.replace(/```(\w*)\n([\s\S]*?)```/g, (match, language, code) => {
+    return `\n[CODE:${language || ""}]\n${code.trim()}\n[/CODE]\n`;
+  });
+
+  // Extract all formulas (LaTeX display \[...\] and inline \(...\))
+  const formulaPlaceholders: string[] = [];
 
   // Extract display math \[ ... \] (can be multiline)
   processedContent = processedContent.replace(/\\\[([\s\S]*?)\\\]/g, (match, formula) => {
@@ -485,8 +594,44 @@ export function parseEnhancedContent(content: string): {
   let currentText = "";
   let inTable = false;
   let tableLines: string[] = [];
+  let inCodeBlock = false;
+  let codeLines: string[] = [];
+  let codeLanguage = "";
 
   for (const line of lines) {
+    // Detect code block start [CODE:language]
+    if (line.trim().startsWith("[CODE:")) {
+      if (currentText.trim()) {
+        elements.push({ type: "text", data: currentText.trim() });
+        currentText = "";
+      }
+      inCodeBlock = true;
+      const match = line.match(/\[CODE:(\w*)\]/);
+      codeLanguage = match ? match[1] : "";
+      codeLines = [];
+      continue;
+    }
+    // Detect code block end [/CODE]
+    else if (line.trim() === "[/CODE]") {
+      if (inCodeBlock) {
+        elements.push({
+          type: "code",
+          data: {
+            code: codeLines.join("\n"),
+            language: codeLanguage,
+          },
+        });
+        inCodeBlock = false;
+        codeLines = [];
+        codeLanguage = "";
+      }
+      continue;
+    }
+    // Inside code block
+    else if (inCodeBlock) {
+      codeLines.push(line);
+      continue;
+    }
     // Detect table start (markdown table format)
     if (line.trim().match(/^\|.*\|$/)) {
       if (currentText.trim()) {

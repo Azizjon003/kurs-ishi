@@ -21,11 +21,15 @@ import {
   createAcademicTable,
   createDiagramDescription,
   createFormulaDisplay,
+  createCodeBlock,
   parseEnhancedContent,
+  convertLatexToUnicode,
   TableData,
   DiagramData,
   FormulaData,
+  CodeBlockData,
 } from "./advancedWordFeatures";
+import { createChapterHeaderImage } from "./imageUtils";
 
 /**
  * Interface for section data structure
@@ -42,6 +46,7 @@ interface Section {
 interface Chapter {
   chapterTitle: string;
   sections: Section[];
+  imageUrl?: string; // Optional chapter header image
 }
 
 /**
@@ -83,6 +88,13 @@ export async function generateWordDocument(
       ? path.join(outputPath, fileName)
       : path.join(process.cwd(), fileName);
 
+    // Pre-generate chapter content with images (async operations)
+    console.log("📝 Generating chapters with images...");
+    const chapter1Content = await createChapterContent(data.chapters[0], 1);
+    const chapter2Content = await createChapterContent(data.chapters[1], 2);
+    const chapter3Content = await createChapterContent(data.chapters[2], 3);
+    console.log("✅ All chapters generated successfully");
+
     // Create document with academic formatting
     const doc = new Document({
       sections: [
@@ -112,15 +124,15 @@ export async function generateWordDocument(
             createPageBreak(),
 
             // Chapter I - Theory (Nazariy asoslar)
-            ...createChapterContent(data.chapters[0], 1),
+            ...chapter1Content,
             createPageBreak(),
 
             // Chapter II - Analysis (Amaliy/Tahliliy qism)
-            ...createChapterContent(data.chapters[1], 2),
+            ...chapter2Content,
             createPageBreak(),
 
             // Chapter III - Improvements (Takomillashtirish takliflari)
-            ...createChapterContent(data.chapters[2], 3),
+            ...chapter3Content,
             createPageBreak(),
 
             // Conclusion (Xulosa)
@@ -380,40 +392,85 @@ function createParagraphs(text: string): (Paragraph | Table)[] {
       // Add formula display
       const formulaParas = createFormulaDisplay(element.data);
       result.push(...formulaParas);
+    } else if (element.type === "code") {
+      // Add code block
+      const codeParas = createCodeBlock(element.data);
+      result.push(...codeParas);
     } else {
-      // Regular text - clean markdown and create paragraphs
-      const cleanText = element.data
+      // Regular text - process inline code and clean markdown
+      let cleanText = element.data
         .replace(/#{1,6}\s/g, "") // Remove markdown headers
         .replace(/\*\*(.+?)\*\*/g, "$1") // Remove bold markdown
         .replace(/\*(.+?)\*/g, "$1") // Remove italic markdown
-        .replace(/`{1,3}(.+?)`{1,3}/g, "$1") // Remove code blocks
         .trim();
 
-      // Split into paragraphs
+      // Split into paragraphs and process inline code
       const paragraphs = cleanText
         .split(/\n\n+|\n/)
         .filter((p) => p.trim() !== "")
-        .map(
-          (paragraph) =>
-            new Paragraph({
-              children: [
+        .map((paragraph) => {
+          const textRuns: TextRun[] = [];
+
+          // Process inline code: `code` → monospace font
+          const parts = paragraph.split(/(`[^`]+`)/g);
+
+          for (const part of parts) {
+            if (part.startsWith("`") && part.endsWith("`")) {
+              // Inline code
+              textRuns.push(
                 new TextRun({
-                  text: paragraph.trim(),
-                  font: "Times New Roman",
-                  size: 28, // 14pt
-                  color: "000000", // Black color
-                }),
-              ],
-              alignment: AlignmentType.JUSTIFIED,
-              spacing: {
-                line: 360, // 1.5 line spacing
-                after: 200,
-              },
-              indent: {
-                firstLine: convertInchesToTwip(0.5), // First line indent
-              },
-            })
-        );
+                  text: part.slice(1, -1), // Remove backticks
+                  font: "Courier New",
+                  size: 26, // 13pt (slightly smaller)
+                  color: "C7254E", // Red-ish color for code
+                  shading: {
+                    type: ShadingType.SOLID,
+                    color: "F9F2F4", // Light pink background
+                  },
+                })
+              );
+            } else if (part.trim()) {
+              // Detect inline LaTeX formulas and convert to Unicode
+              // Check if contains LaTeX commands: \frac, \sum, \int, Greek letters, etc.
+              const hasLatex = /\\[a-zA-Z]+/.test(part);
+
+              if (hasLatex) {
+                // Convert LaTeX to Unicode
+                const convertedText = convertLatexToUnicode(part);
+                textRuns.push(
+                  new TextRun({
+                    text: convertedText,
+                    font: "Times New Roman",
+                    size: 28, // 14pt
+                    color: "000000", // Black color
+                  })
+                );
+              } else {
+                // Regular text without LaTeX
+                textRuns.push(
+                  new TextRun({
+                    text: part,
+                    font: "Times New Roman",
+                    size: 28, // 14pt
+                    color: "000000", // Black color
+                  })
+                );
+              }
+            }
+          }
+
+          return new Paragraph({
+            children: textRuns,
+            alignment: AlignmentType.JUSTIFIED,
+            spacing: {
+              line: 360, // 1.5 line spacing
+              after: 200,
+            },
+            indent: {
+              firstLine: convertInchesToTwip(0.5), // First line indent
+            },
+          });
+        });
 
       result.push(...paragraphs);
     }
@@ -424,16 +481,25 @@ function createParagraphs(text: string): (Paragraph | Table)[] {
 
 /**
  * Create chapter content with sections
- * Supports tables, diagrams, and formulas
+ * Supports tables, diagrams, formulas, and images
  */
-function createChapterContent(
+async function createChapterContent(
   chapter: Chapter,
   chapterNumber: number
-): (Paragraph | Table)[] {
+): Promise<(Paragraph | Table)[]> {
   const elements: (Paragraph | Table)[] = [];
 
   // Chapter title
   elements.push(createHeading1(chapter.chapterTitle.toUpperCase()));
+
+  // Add chapter header image if available
+  if (chapter.imageUrl) {
+    const imageParas = await createChapterHeaderImage(
+      chapter.imageUrl,
+      chapter.chapterTitle
+    );
+    elements.push(...imageParas);
+  }
 
   // Sections
   chapter.sections.forEach((section) => {

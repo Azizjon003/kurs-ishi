@@ -17,6 +17,7 @@ import {
   generateEvaluationReport,
   EvaluationResult,
 } from "../utils/contentEvaluator";
+import { searchChapterImages } from "../utils/imageSearch";
 
 const stepTopicName = createStep({
   id: "step-topic-name",
@@ -858,6 +859,111 @@ const qualityReportStep = createStep({
   },
 });
 
+const imageSearchStep = createStep({
+  id: "image-search-step",
+  description: "Search and attach relevant images for each chapter",
+  inputSchema: z.object({
+    name: z.string(),
+    chapterTitle: z.string(),
+    language: z.string(),
+    introduction: z.string(),
+    introductionEvaluation: z.any().optional(),
+    conclusion: z.string(),
+    conclusionEvaluation: z.any().optional(),
+    bibliography: z.string(),
+    qualityReport: z.string().optional(),
+    chapters: z.array(
+      z.object({
+        chapterTitle: z.string(),
+        sections: z.array(
+          z.object({
+            title: z.string(),
+            content: z.string(),
+            researchedDatas: z.string(),
+            evaluation: z.any().optional(),
+          })
+        ),
+      })
+    ),
+  }),
+  outputSchema: z.object({
+    name: z.string(),
+    chapterTitle: z.string(),
+    language: z.string(),
+    introduction: z.string(),
+    introductionEvaluation: z.any().optional(),
+    conclusion: z.string(),
+    conclusionEvaluation: z.any().optional(),
+    bibliography: z.string(),
+    qualityReport: z.string().optional(),
+    chapters: z.array(
+      z.object({
+        chapterTitle: z.string(),
+        imageUrl: z.string().optional(),
+        sections: z.array(
+          z.object({
+            title: z.string(),
+            content: z.string(),
+            researchedDatas: z.string(),
+            evaluation: z.any().optional(),
+          })
+        ),
+      })
+    ),
+  }),
+  execute: async ({ inputData }) => {
+    if (!inputData) {
+      throw new Error("Input data not found");
+    }
+
+    try {
+      console.log("\n📸 Searching images for chapters...");
+
+      // Search images for all 3 chapters based on topic
+      const chapterImages = await searchChapterImages(inputData.name);
+
+      // Attach image URLs to chapters
+      const chaptersWithImages = inputData.chapters.map((chapter, index) => {
+        let imageUrl: string | undefined;
+
+        // Chapter 0 = Theory, Chapter 1 = Analysis, Chapter 2 = Improvement
+        if (index === 0) {
+          imageUrl = chapterImages.theory;
+          console.log(`✅ Theory chapter image: ${imageUrl.substring(0, 50)}...`);
+        } else if (index === 1) {
+          imageUrl = chapterImages.analysis;
+          console.log(`✅ Analysis chapter image: ${imageUrl.substring(0, 50)}...`);
+        } else if (index === 2) {
+          imageUrl = chapterImages.improvement;
+          console.log(`✅ Improvement chapter image: ${imageUrl.substring(0, 50)}...`);
+        }
+
+        return {
+          ...chapter,
+          imageUrl,
+        };
+      });
+
+      console.log("✅ All chapter images attached successfully\n");
+
+      return {
+        ...inputData,
+        chapters: chaptersWithImages,
+      };
+    } catch (error) {
+      console.error("❌ Error in image search step:", error);
+      // Continue without images on error
+      return {
+        ...inputData,
+        chapters: inputData.chapters.map((chapter) => ({
+          ...chapter,
+          imageUrl: undefined,
+        })),
+      };
+    }
+  },
+});
+
 const documentStep = createStep({
   id: "document-step",
   description: "Create Word document with professional academic formatting",
@@ -874,6 +980,7 @@ const documentStep = createStep({
     chapters: z.array(
       z.object({
         chapterTitle: z.string(),
+        imageUrl: z.string().optional(),
         sections: z.array(
           z.object({
             title: z.string(),
@@ -990,6 +1097,7 @@ const writerWorkFlow = createWorkflow({
   .then(conclusionStep)
   .then(bibliographyStep)
   .then(qualityReportStep)
+  .then(imageSearchStep)
   .then(documentStep);
 
 writerWorkFlow.commit();

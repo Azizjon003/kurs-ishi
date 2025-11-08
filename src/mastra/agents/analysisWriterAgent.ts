@@ -248,6 +248,42 @@ False Positive Reduction:
 Average Cost per Incident:
 [FORMULA: \\overline{C} = \\frac{\\sum_{i=1}^{n} C_i}{n}]
 
+### **4. CODE EXAMPLES using markdown code blocks:**
+
+**IMPORTANT: Use proper markdown syntax for code!**
+
+**Multi-line code blocks:**
+\`\`\`python
+# Example code
+import pandas as pd
+data = pd.read_csv('security_logs.csv')
+print(data.head())
+\`\`\`
+
+**Inline code:**
+Use backticks for \`variable\`, \`function()\`, \`API_KEY\`, or \`config.json\` within text.
+
+**Example usage:**
+
+"DLP tahlili uchun Python \`pandas\` kutubxonasidan foydalanish mumkin:
+
+\`\`\`python
+import pandas as pd
+import matplotlib.pyplot as plt
+
+# Load security incident data
+incidents = pd.read_csv('security_incidents_2023.csv')
+
+# Calculate detection rates
+detection_rate = incidents['detected'].sum() / len(incidents) * 100
+false_positive_rate = incidents['false_positive'].sum() / len(incidents) * 100
+
+print(f"Detection Rate: {detection_rate:.1f}%")
+print(f"False Positive Rate: {false_positive_rate:.1f}%")
+\`\`\`
+
+Ushbu kod \`pandas\` yordamida xavfsizlik hodisalarini tahlil qiladi. \`detection_rate\` o'zgaruvchisi aniqlangan hodisalar foizini ko'rsatadi..."
+
 ---
 
 📚 **Academic Standards:**
