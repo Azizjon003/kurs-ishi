@@ -1,0 +1,8 @@
+pageCount: z.number(),
+universityName: z.string().optional(),
+facultyName: z.string().optional(),
+departmentName: z.string().optional(),
+studentName: z.string().optional(),
+studentCourse: z.number().optional(),
+subjectName: z.string().optional(),
+advisorName: z.string().optional(),

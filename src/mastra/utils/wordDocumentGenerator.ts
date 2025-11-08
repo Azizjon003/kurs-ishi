@@ -60,6 +60,14 @@ interface CoursePaperData {
   conclusion: string;
   bibliography: string;
   chapters: Chapter[];
+  // Optional metadata for cover page
+  universityName?: string;
+  facultyName?: string;
+  departmentName?: string;
+  studentName?: string;
+  studentCourse?: number;
+  subjectName?: string;
+  advisorName?: string;
 }
 
 /**
@@ -110,8 +118,17 @@ export async function generateWordDocument(
             },
           },
           children: [
-            // Main Title
-            createMainTitle(data.chapterTitle),
+            // Cover Page
+            ...createCoverPage(
+              data.name,
+              data.universityName,
+              data.facultyName,
+              data.departmentName,
+              data.studentName,
+              data.studentCourse,
+              data.subjectName,
+              data.advisorName
+            ),
             createPageBreak(),
 
             // Table of Contents (Plan)
@@ -174,7 +191,184 @@ function sanitizeFileName(name: string): string {
 }
 
 /**
- * Create main title paragraph
+ * Create cover page with university format
+ */
+function createCoverPage(
+  topic: string,
+  universityName: string = "O'ZBEKISTONDA MILLIY UNIVERSITETI",
+  facultyName: string = "Matematika fakulteti",
+  departmentName: string = '"Amaliy matematika" yo\'nalishi',
+  studentName: string = "FAYZIYEV JAHONGIR KAMOL O'G'LINING",
+  studentCourse: number = 4,
+  subjectName: string = "MATEMATIKA",
+  advisorName?: string
+): Paragraph[] {
+  return [
+    // Ministry header
+    new Paragraph({
+      children: [
+        new TextRun({
+          text: "O'ZBEKISTON RESPUBLIKASI OLIY TA'LIM, FAN VA INNOVATSIYALAR VAZIRLIGI",
+          font: "Times New Roman",
+          size: 24, // 12pt
+          bold: false,
+          color: "000000",
+        }),
+      ],
+      alignment: AlignmentType.CENTER,
+      spacing: { before: 240, after: 240 },
+    }),
+
+    // University name
+    new Paragraph({
+      children: [
+        new TextRun({
+          text: universityName.toUpperCase(),
+          font: "Times New Roman",
+          size: 28, // 14pt
+          bold: true,
+          color: "000000",
+        }),
+      ],
+      alignment: AlignmentType.CENTER,
+      spacing: { after: 240 },
+    }),
+
+    // Faculty
+    new Paragraph({
+      children: [
+        new TextRun({
+          text: facultyName,
+          font: "Times New Roman",
+          size: 28, // 14pt
+          color: "000000",
+        }),
+      ],
+      alignment: AlignmentType.CENTER,
+      spacing: { after: 240 },
+    }),
+
+    // Department and course
+    new Paragraph({
+      children: [
+        new TextRun({
+          text: `${departmentName} ${studentCourse}-kurs talabasi`,
+          font: "Times New Roman",
+          size: 28, // 14pt
+          color: "000000",
+        }),
+      ],
+      alignment: AlignmentType.CENTER,
+      spacing: { after: 240 },
+    }),
+
+    // Author name
+    new Paragraph({
+      children: [
+        new TextRun({
+          text: studentName.toUpperCase(),
+          font: "Times New Roman",
+          size: 28, // 14pt
+          bold: true,
+          color: "000000",
+        }),
+      ],
+      alignment: AlignmentType.CENTER,
+      spacing: { after: 240 },
+    }),
+
+    // Subject
+    new Paragraph({
+      children: [
+        new TextRun({
+          text: `${subjectName.toUpperCase()} FANIDAN TAYYORLAGAN`,
+          font: "Times New Roman",
+          size: 28, // 14pt
+          color: "000000",
+        }),
+      ],
+      alignment: AlignmentType.CENTER,
+      spacing: { after: 360 },
+    }),
+
+    // Main title - KURS ISHI
+    new Paragraph({
+      children: [
+        new TextRun({
+          text: "KURS ISHI",
+          font: "Times New Roman",
+          size: 48, // 24pt
+          bold: true,
+          color: "000000",
+        }),
+      ],
+      alignment: AlignmentType.CENTER,
+      spacing: { before: 360, after: 360 },
+    }),
+
+    // Topic title
+    new Paragraph({
+      children: [
+        new TextRun({
+          text: `Mavzu: ${topic}`,
+          font: "Times New Roman",
+          size: 28, // 14pt
+          bold: false,
+          color: "000000",
+        }),
+      ],
+      alignment: AlignmentType.CENTER,
+      spacing: { after: 480 },
+    }),
+
+    // Spacer
+    new Paragraph({
+      text: "",
+      spacing: { before: 1200 },
+    }),
+
+    // Scientific advisor
+    new Paragraph({
+      children: [
+        new TextRun({
+          text: `Ilmiy rahbari: ${advisorName ? advisorName : "______"}`,
+          font: "Times New Roman",
+          size: 28, // 14pt
+          color: "000000",
+        }),
+      ],
+      alignment: AlignmentType.RIGHT,
+      spacing: { after: 240 },
+      indent: {
+        right: convertInchesToTwip(1),
+      },
+    }),
+
+    // Spacer for bottom
+    new Paragraph({
+      text: "",
+      spacing: { before: 1200 },
+    }),
+
+    // City and year
+    new Paragraph({
+      children: [
+        new TextRun({
+          text: `Toshkent - ${new Date().getFullYear()}`,
+          font: "Times New Roman",
+          size: 28, // 14pt
+          bold: false,
+          color: "000000",
+        }),
+      ],
+      alignment: AlignmentType.CENTER,
+      spacing: { before: 480 },
+    }),
+  ];
+}
+
+/**
+ * Create main title paragraph (for internal use)
  */
 function createMainTitle(title: string): Paragraph {
   return new Paragraph({

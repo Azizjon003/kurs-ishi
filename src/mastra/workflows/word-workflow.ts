@@ -17,18 +17,60 @@ import {
   generateEvaluationReport,
   EvaluationResult,
 } from "../utils/contentEvaluator";
-import { searchChapterImages } from "../utils/imageSearch";
+import {
+  calculatePageCount,
+  generatePageCountReport,
+  validatePageCount,
+} from "../utils/pageCounter";
+
+// Metadata schema for cover page - spread this into all step schemas
+const metadataFields = {
+  universityName: z.string().optional(),
+  facultyName: z.string().optional(),
+  departmentName: z.string().optional(),
+  studentName: z.string().optional(),
+  studentCourse: z.number().optional(),
+  subjectName: z.string().optional(),
+  advisorName: z.string().optional(),
+};
+
+// Helper to extract metadata from input
+const extractMetadata = (inputData: any) => ({
+  universityName: inputData.universityName,
+  facultyName: inputData.facultyName,
+  departmentName: inputData.departmentName,
+  studentName: inputData.studentName,
+  studentCourse: inputData.studentCourse,
+  subjectName: inputData.subjectName,
+  advisorName: inputData.advisorName,
+});
 
 const stepTopicName = createStep({
   id: "step-topic-name",
-  description: "Prepare topic and language",
+  description: "Prepare topic, language, page count and metadata",
   inputSchema: z.object({
     topic: z.string(),
     language: z.string(),
+    pageCount: z.number().optional(),
+    universityName: z.string().optional(),
+    facultyName: z.string().optional(),
+    departmentName: z.string().optional(),
+    studentName: z.string().optional(),
+    studentCourse: z.number().optional(),
+    subjectName: z.string().optional(),
+    advisorName: z.string().optional(),
   }),
   outputSchema: z.object({
     name: z.string(),
     language: z.string(),
+    pageCount: z.number(),
+    universityName: z.string().optional(),
+    facultyName: z.string().optional(),
+    departmentName: z.string().optional(),
+    studentName: z.string().optional(),
+    studentCourse: z.number().optional(),
+    subjectName: z.string().optional(),
+    advisorName: z.string().optional(),
   }),
   execute: async ({ inputData }) => {
     if (!inputData) {
@@ -37,6 +79,14 @@ const stepTopicName = createStep({
     return {
       name: inputData.topic,
       language: inputData.language,
+      pageCount: inputData.pageCount || 30,
+      universityName: inputData.universityName,
+      facultyName: inputData.facultyName,
+      departmentName: inputData.departmentName,
+      studentName: inputData.studentName,
+      studentCourse: inputData.studentCourse,
+      subjectName: inputData.subjectName,
+      advisorName: inputData.advisorName,
     };
   },
 });
@@ -47,11 +97,27 @@ const plannerStep = createStep({
   inputSchema: z.object({
     name: z.string(),
     language: z.string(),
+    pageCount: z.number(),
+    universityName: z.string().optional(),
+    facultyName: z.string().optional(),
+    departmentName: z.string().optional(),
+    studentName: z.string().optional(),
+    studentCourse: z.number().optional(),
+    subjectName: z.string().optional(),
+    advisorName: z.string().optional(),
   }),
   outputSchema: z.object({
     name: z.string(),
     chapterTitle: z.string(),
     language: z.string(),
+    pageCount: z.number(),
+    universityName: z.string().optional(),
+    facultyName: z.string().optional(),
+    departmentName: z.string().optional(),
+    studentName: z.string().optional(),
+    studentCourse: z.number().optional(),
+    subjectName: z.string().optional(),
+    advisorName: z.string().optional(),
     chapters: z.array(
       z.object({
         chapterTitle: z.string(),
@@ -93,6 +159,14 @@ const plannerStep = createStep({
       name: inputData.name,
       ...JSON.parse(plan.text),
       language: inputData.language,
+      pageCount: inputData.pageCount,
+      universityName: inputData.universityName,
+      facultyName: inputData.facultyName,
+      departmentName: inputData.departmentName,
+      studentName: inputData.studentName,
+      studentCourse: inputData.studentCourse,
+      subjectName: inputData.subjectName,
+      advisorName: inputData.advisorName,
     };
   },
 });
@@ -104,6 +178,14 @@ const researchStep = createStep({
     name: z.string(),
     chapterTitle: z.string(),
     language: z.string(),
+    pageCount: z.number(),
+    universityName: z.string().optional(),
+    facultyName: z.string().optional(),
+    departmentName: z.string().optional(),
+    studentName: z.string().optional(),
+    studentCourse: z.number().optional(),
+    subjectName: z.string().optional(),
+    advisorName: z.string().optional(),
     chapters: z.array(
       z.object({
         chapterTitle: z.string(),
@@ -119,6 +201,14 @@ const researchStep = createStep({
     name: z.string(),
     chapterTitle: z.string(),
     language: z.string(),
+    pageCount: z.number(),
+    universityName: z.string().optional(),
+    facultyName: z.string().optional(),
+    departmentName: z.string().optional(),
+    studentName: z.string().optional(),
+    studentCourse: z.number().optional(),
+    subjectName: z.string().optional(),
+    advisorName: z.string().optional(),
     chapters: z.array(
       z.object({
         chapterTitle: z.string(),
@@ -135,21 +225,12 @@ const researchStep = createStep({
     if (!inputData) {
       throw new Error("Input data not found");
     }
-    const inputDatas: any = inputData;
+    const inputDatas: any = { ...inputData };
     for (const [i, chapter] of inputData.chapters.entries()) {
       for (const [j, section] of chapter.sections.entries()) {
         const sectionText = `Research this section in ${inputData.language} language:\n\nTitle: ${section.title}`;
         console.log(sectionText);
-        // let researchData = await researchAgent.generate([
-        //   {
-        //     role: "user",
-        //     content: sectionText,
-        //   },
-        // ]);
-
         inputDatas.chapters[i].sections[j]["researchedDatas"] = "";
-        // researchData.text;
-        // console.log(inputDatas.chapters[i].sections[j]);
       }
     }
 
@@ -164,6 +245,14 @@ const introStep = createStep({
     name: z.string(),
     chapterTitle: z.string(),
     language: z.string(),
+    pageCount: z.number(),
+    universityName: z.string().optional(),
+    facultyName: z.string().optional(),
+    departmentName: z.string().optional(),
+    studentName: z.string().optional(),
+    studentCourse: z.number().optional(),
+    subjectName: z.string().optional(),
+    advisorName: z.string().optional(),
     chapters: z.array(
       z.object({
         chapterTitle: z.string(),
@@ -180,6 +269,14 @@ const introStep = createStep({
     name: z.string(),
     chapterTitle: z.string(),
     language: z.string(),
+    pageCount: z.number(),
+    universityName: z.string().optional(),
+    facultyName: z.string().optional(),
+    departmentName: z.string().optional(),
+    studentName: z.string().optional(),
+    studentCourse: z.number().optional(),
+    subjectName: z.string().optional(),
+    advisorName: z.string().optional(),
     introduction: z.string(),
     chapters: z.array(
       z.object({
@@ -486,6 +583,160 @@ const AnalysisWritingStep = createStep({
   },
 });
 
+// Combined parallel chapters step
+const parallelChaptersStep = createStep({
+  id: "parallel-chapters-step",
+  description: "Write Theory, Analysis, and Improvement chapters in parallel",
+  inputSchema: z.object({
+    name: z.string(),
+    chapterTitle: z.string(),
+    language: z.string(),
+    pageCount: z.number(),
+    universityName: z.string().optional(),
+    facultyName: z.string().optional(),
+    departmentName: z.string().optional(),
+    studentName: z.string().optional(),
+    studentCourse: z.number().optional(),
+    subjectName: z.string().optional(),
+    advisorName: z.string().optional(),
+    introduction: z.string(),
+    introductionEvaluation: z.any().optional(),
+    chapters: z.array(
+      z.object({
+        chapterTitle: z.string(),
+        sections: z.array(
+          z.object({
+            title: z.string(),
+            researchedDatas: z.string(),
+          })
+        ),
+      })
+    ),
+  }),
+  outputSchema: z.object({
+    name: z.string(),
+    chapterTitle: z.string(),
+    language: z.string(),
+    pageCount: z.number(),
+    universityName: z.string().optional(),
+    facultyName: z.string().optional(),
+    departmentName: z.string().optional(),
+    studentName: z.string().optional(),
+    studentCourse: z.number().optional(),
+    subjectName: z.string().optional(),
+    advisorName: z.string().optional(),
+    introduction: z.string(),
+    introductionEvaluation: z.any().optional(),
+    chapters: z.array(
+      z.object({
+        chapterTitle: z.string(),
+        sections: z.array(
+          z.object({
+            title: z.string(),
+            content: z.string(),
+            researchedDatas: z.string(),
+            evaluation: z.any().optional(),
+          })
+        ),
+      })
+    ),
+  }),
+  execute: async ({ inputData }) => {
+    if (!inputData) {
+      throw new Error("Input data not found");
+    }
+
+    console.log("\n" + "=".repeat(60));
+    console.log("⚡ WRITING ALL CHAPTERS IN PARALLEL");
+    console.log("=".repeat(60));
+
+    const inputDatas: any = { ...inputData };
+
+    // Process all three chapters in parallel
+    const chapterPromises = inputData.chapters.map(async (chapter, chapterIndex) => {
+      const chapterType = chapterIndex === 0 ? "THEORY" : chapterIndex === 1 ? "ANALYSIS" : "IMPROVEMENT";
+      const agent = chapterIndex === 0 ? theoryWriterAgent : chapterIndex === 1 ? analysisWriterAgent : improvementWriterAgent;
+
+      console.log(`\n📚 Starting ${chapterType} Chapter: ${chapter.chapterTitle}`);
+
+      const processedSections = [];
+
+      for (const [sectionIndex, section] of chapter.sections.entries()) {
+        console.log(`\n📝 ${chapterType} - Section: ${section.title}`);
+
+        let attempts = 0;
+        let currentContent = "";
+        let evaluation: EvaluationResult | undefined;
+
+        // Try up to 2 times per section
+        while (attempts < 2) {
+          attempts++;
+
+          const prompt = attempts === 1
+            ? `Write the ${chapterType.toLowerCase()} content in ${inputData.language} language for this section:\n\n${JSON.stringify(section)}\n\nIMPORTANT: Ensure high quality, comprehensive coverage, neutral tone, and accurate information.`
+            : `Write the ${chapterType.toLowerCase()} content in ${inputData.language} language for this section:\n\n${JSON.stringify(section)}\n\nIMPORTANT: Previous attempt scored ${((evaluation?.overallScore ?? 0) * 100).toFixed(1)}%. Improve: ${evaluation?.details ?? ""}`;
+
+          const content = await agent.generate([
+            {
+              role: "user",
+              content: prompt,
+            },
+          ]);
+          currentContent = content.text;
+
+          // Evaluate the section
+          evaluation = await evaluateChapterSection(
+            currentContent,
+            section.title,
+            chapter.chapterTitle
+          );
+
+          // If passed or last attempt, break
+          if (evaluation?.passed || attempts >= 2) {
+            if (evaluation?.passed) {
+              console.log(`  ✅ ${chapterType} section passed (${((evaluation.overallScore ?? 0) * 100).toFixed(1)}%)`);
+            } else {
+              console.log(`  ⚠️  ${chapterType} section quality: ${((evaluation?.overallScore ?? 0) * 100).toFixed(1)}% (accepting best attempt)`);
+            }
+            break;
+          }
+
+          console.log(`  🔄 Regenerating ${chapterType} section...`);
+        }
+
+        processedSections.push({
+          ...section,
+          content: currentContent,
+          evaluation: {
+            passed: evaluation?.passed ?? false,
+            score: evaluation?.overallScore ?? 0,
+            details: evaluation?.details ?? "No evaluation performed",
+            attempts,
+          },
+        });
+      }
+
+      console.log(`✅ ${chapterType} Chapter completed!`);
+      return processedSections;
+    });
+
+    // Wait for all chapters to complete
+    const allProcessedSections = await Promise.all(chapterPromises);
+
+    // Update chapters with processed sections
+    inputDatas.chapters = inputData.chapters.map((chapter, index) => ({
+      ...chapter,
+      sections: allProcessedSections[index],
+    }));
+
+    console.log("\n" + "=".repeat(60));
+    console.log("✅ ALL CHAPTERS COMPLETED IN PARALLEL");
+    console.log("=".repeat(60));
+
+    return inputDatas;
+  },
+});
+
 const ImprovementWriterAgent = createStep({
   id: "improvement-writing-step",
   description: "Write the improvement proposals with quality evaluation",
@@ -604,6 +855,14 @@ const conclusionStep = createStep({
     name: z.string(),
     chapterTitle: z.string(),
     language: z.string(),
+    pageCount: z.number(),
+    universityName: z.string().optional(),
+    facultyName: z.string().optional(),
+    departmentName: z.string().optional(),
+    studentName: z.string().optional(),
+    studentCourse: z.number().optional(),
+    subjectName: z.string().optional(),
+    advisorName: z.string().optional(),
     introduction: z.string(),
     introductionEvaluation: z.any().optional(),
     chapters: z.array(
@@ -624,6 +883,14 @@ const conclusionStep = createStep({
     name: z.string(),
     chapterTitle: z.string(),
     language: z.string(),
+    pageCount: z.number(),
+    universityName: z.string().optional(),
+    facultyName: z.string().optional(),
+    departmentName: z.string().optional(),
+    studentName: z.string().optional(),
+    studentCourse: z.number().optional(),
+    subjectName: z.string().optional(),
+    advisorName: z.string().optional(),
     introduction: z.string(),
     introductionEvaluation: z.any().optional(),
     conclusion: z.string(),
@@ -720,6 +987,14 @@ const bibliographyStep = createStep({
     name: z.string(),
     chapterTitle: z.string(),
     language: z.string(),
+    pageCount: z.number(),
+    universityName: z.string().optional(),
+    facultyName: z.string().optional(),
+    departmentName: z.string().optional(),
+    studentName: z.string().optional(),
+    studentCourse: z.number().optional(),
+    subjectName: z.string().optional(),
+    advisorName: z.string().optional(),
     introduction: z.string(),
     introductionEvaluation: z.any().optional(),
     conclusion: z.string(),
@@ -742,6 +1017,14 @@ const bibliographyStep = createStep({
     name: z.string(),
     chapterTitle: z.string(),
     language: z.string(),
+    pageCount: z.number(),
+    universityName: z.string().optional(),
+    facultyName: z.string().optional(),
+    departmentName: z.string().optional(),
+    studentName: z.string().optional(),
+    studentCourse: z.number().optional(),
+    subjectName: z.string().optional(),
+    advisorName: z.string().optional(),
     introduction: z.string(),
     introductionEvaluation: z.any().optional(),
     conclusion: z.string(),
@@ -788,6 +1071,16 @@ const qualityReportStep = createStep({
   description: "Generate comprehensive quality evaluation report",
   inputSchema: z.object({
     name: z.string(),
+    chapterTitle: z.string(),
+    language: z.string(),
+    pageCount: z.number(),
+    universityName: z.string().optional(),
+    facultyName: z.string().optional(),
+    departmentName: z.string().optional(),
+    studentName: z.string().optional(),
+    studentCourse: z.number().optional(),
+    subjectName: z.string().optional(),
+    advisorName: z.string().optional(),
     introduction: z.string(),
     introductionEvaluation: z.any().optional(),
     conclusion: z.string(),
@@ -797,6 +1090,16 @@ const qualityReportStep = createStep({
   }),
   outputSchema: z.object({
     name: z.string(),
+    chapterTitle: z.string(),
+    language: z.string(),
+    pageCount: z.number(),
+    universityName: z.string().optional(),
+    facultyName: z.string().optional(),
+    departmentName: z.string().optional(),
+    studentName: z.string().optional(),
+    studentCourse: z.number().optional(),
+    subjectName: z.string().optional(),
+    advisorName: z.string().optional(),
     introduction: z.string(),
     introductionEvaluation: z.any().optional(),
     conclusion: z.string(),
@@ -859,108 +1162,75 @@ const qualityReportStep = createStep({
   },
 });
 
-const imageSearchStep = createStep({
-  id: "image-search-step",
-  description: "Search and attach relevant images for each chapter",
+const pageCountStep = createStep({
+  id: "page-count-step",
+  description: "Calculate and validate page count",
   inputSchema: z.object({
     name: z.string(),
     chapterTitle: z.string(),
     language: z.string(),
+    pageCount: z.number(),
+    universityName: z.string().optional(),
+    facultyName: z.string().optional(),
+    departmentName: z.string().optional(),
+    studentName: z.string().optional(),
+    studentCourse: z.number().optional(),
+    subjectName: z.string().optional(),
+    advisorName: z.string().optional(),
     introduction: z.string(),
     introductionEvaluation: z.any().optional(),
     conclusion: z.string(),
     conclusionEvaluation: z.any().optional(),
     bibliography: z.string(),
-    qualityReport: z.string().optional(),
-    chapters: z.array(
-      z.object({
-        chapterTitle: z.string(),
-        sections: z.array(
-          z.object({
-            title: z.string(),
-            content: z.string(),
-            researchedDatas: z.string(),
-            evaluation: z.any().optional(),
-          })
-        ),
-      })
-    ),
+    qualityReport: z.string(),
+    chapters: z.any(),
   }),
   outputSchema: z.object({
     name: z.string(),
     chapterTitle: z.string(),
     language: z.string(),
+    pageCount: z.number(),
+    universityName: z.string().optional(),
+    facultyName: z.string().optional(),
+    departmentName: z.string().optional(),
+    studentName: z.string().optional(),
+    studentCourse: z.number().optional(),
+    subjectName: z.string().optional(),
+    advisorName: z.string().optional(),
     introduction: z.string(),
     introductionEvaluation: z.any().optional(),
     conclusion: z.string(),
     conclusionEvaluation: z.any().optional(),
     bibliography: z.string(),
-    qualityReport: z.string().optional(),
-    chapters: z.array(
-      z.object({
-        chapterTitle: z.string(),
-        imageUrl: z.string().optional(),
-        sections: z.array(
-          z.object({
-            title: z.string(),
-            content: z.string(),
-            researchedDatas: z.string(),
-            evaluation: z.any().optional(),
-          })
-        ),
-      })
-    ),
+    qualityReport: z.string(),
+    pageCountReport: z.string(),
+    chapters: z.any(),
   }),
   execute: async ({ inputData }) => {
-    if (!inputData) {
-      throw new Error("Input data not found");
-    }
+    console.log("\n" + "=".repeat(60));
+    console.log("📊 CALCULATING PAGE COUNT");
+    console.log("=".repeat(60));
 
-    try {
-      console.log("\n📸 Searching images for chapters...");
+    // Calculate page count
+    const pageEstimate = calculatePageCount({
+      introduction: inputData.introduction,
+      conclusion: inputData.conclusion,
+      chapters: inputData.chapters,
+      targetPages: inputData.pageCount,
+    });
 
-      // Search images for all 3 chapters based on topic
-      const chapterImages = await searchChapterImages(inputData.name);
+    // Generate and display report
+    const report = generatePageCountReport(pageEstimate);
+    console.log(report);
 
-      // Attach image URLs to chapters
-      const chaptersWithImages = inputData.chapters.map((chapter, index) => {
-        let imageUrl: string | undefined;
+    // Validate page count
+    const validation = validatePageCount(pageEstimate);
+    console.log(`\n${validation.valid ? '✅' : '⚠️ '} ${validation.message}\n`);
 
-        // Chapter 0 = Theory, Chapter 1 = Analysis, Chapter 2 = Improvement
-        if (index === 0) {
-          imageUrl = chapterImages.theory;
-          console.log(`✅ Theory chapter image: ${imageUrl.substring(0, 50)}...`);
-        } else if (index === 1) {
-          imageUrl = chapterImages.analysis;
-          console.log(`✅ Analysis chapter image: ${imageUrl.substring(0, 50)}...`);
-        } else if (index === 2) {
-          imageUrl = chapterImages.improvement;
-          console.log(`✅ Improvement chapter image: ${imageUrl.substring(0, 50)}...`);
-        }
-
-        return {
-          ...chapter,
-          imageUrl,
-        };
-      });
-
-      console.log("✅ All chapter images attached successfully\n");
-
-      return {
-        ...inputData,
-        chapters: chaptersWithImages,
-      };
-    } catch (error) {
-      console.error("❌ Error in image search step:", error);
-      // Continue without images on error
-      return {
-        ...inputData,
-        chapters: inputData.chapters.map((chapter) => ({
-          ...chapter,
-          imageUrl: undefined,
-        })),
-      };
-    }
+    return {
+      ...inputData,
+      pageCountReport: report,
+    };
   },
 });
 
@@ -977,10 +1247,17 @@ const documentStep = createStep({
     conclusionEvaluation: z.any().optional(),
     bibliography: z.string(),
     qualityReport: z.string().optional(),
+    pageCountReport: z.string().optional(),
+    universityName: z.string().optional(),
+    facultyName: z.string().optional(),
+    departmentName: z.string().optional(),
+    studentName: z.string().optional(),
+    studentCourse: z.number().optional(),
+    subjectName: z.string().optional(),
+    advisorName: z.string().optional(),
     chapters: z.array(
       z.object({
         chapterTitle: z.string(),
-        imageUrl: z.string().optional(),
         sections: z.array(
           z.object({
             title: z.string(),
@@ -1034,6 +1311,13 @@ const documentStep = createStep({
         conclusion: inputData.conclusion,
         bibliography: inputData.bibliography,
         chapters: inputData.chapters,
+        universityName: inputData.universityName,
+        facultyName: inputData.facultyName,
+        departmentName: inputData.departmentName,
+        studentName: inputData.studentName,
+        studentCourse: inputData.studentCourse,
+        subjectName: inputData.subjectName,
+        advisorName: inputData.advisorName,
       });
 
       console.log(`✅ Document successfully created at: ${documentPath}`);
@@ -1060,6 +1344,39 @@ const writerWorkFlow = createWorkflow({
       .describe(
         "The language for writing the course paper (e.g., 'uzbek', 'english', 'russian')"
       ),
+    pageCount: z
+      .number()
+      .optional()
+      .describe("Target page count for the paper (default: 30 pages)"),
+    // Cover page metadata
+    universityName: z
+      .string()
+      .optional()
+      .describe("University name (default: O'ZBEKISTONDA MILLIY UNIVERSITETI)"),
+    facultyName: z
+      .string()
+      .optional()
+      .describe("Faculty name (default: Matematika fakulteti)"),
+    departmentName: z
+      .string()
+      .optional()
+      .describe("Department name (default: Amaliy matematika yo'nalishi)"),
+    studentName: z
+      .string()
+      .optional()
+      .describe("Student full name"),
+    studentCourse: z
+      .number()
+      .optional()
+      .describe("Student course year (default: 4)"),
+    subjectName: z
+      .string()
+      .optional()
+      .describe("Subject name (default: MATEMATIKA)"),
+    advisorName: z
+      .string()
+      .optional()
+      .describe("Scientific advisor name"),
   }),
   outputSchema: z.object({
     name: z.string(),
@@ -1091,13 +1408,11 @@ const writerWorkFlow = createWorkflow({
   .then(plannerStep)
   .then(researchStep)
   .then(introStep)
-  .then(theoryStep)
-  .then(AnalysisWritingStep)
-  .then(ImprovementWriterAgent)
+  .then(parallelChaptersStep) // All chapters run in parallel now!
   .then(conclusionStep)
   .then(bibliographyStep)
   .then(qualityReportStep)
-  .then(imageSearchStep)
+  .then(pageCountStep) // Check page count before generating document
   .then(documentStep);
 
 writerWorkFlow.commit();
