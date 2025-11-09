@@ -219,17 +219,20 @@ export class JobQueue extends EventEmitter {
 
     try {
       const workflow = mastra.getWorkflow('writerWorkFlow');
-      const result = await workflow.execute({
-        topic: input.topic,
-        language: input.language,
-        pageCount: input.pageCount,
-        universityName: input.universityName,
-        facultyName: input.facultyName,
-        departmentName: input.departmentName,
-        studentName: input.studentName,
-        studentCourse: input.studentCourse,
-        subjectName: input.subjectName,
-        advisorName: input.advisorName,
+      const run = await workflow.createRunAsync();
+      const result = await run.start({
+        inputData: {
+          topic: input.topic,
+          language: input.language,
+          pageCount: input.pageCount,
+          universityName: input.universityName,
+          facultyName: input.facultyName,
+          departmentName: input.departmentName,
+          studentName: input.studentName,
+          studentCourse: input.studentCourse,
+          subjectName: input.subjectName,
+          advisorName: input.advisorName,
+        }
       });
 
       clearInterval(progressInterval);
