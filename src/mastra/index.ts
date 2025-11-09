@@ -30,7 +30,7 @@ export const mastra = new Mastra({
     improvementWriterAgent,
     conclusionWriterAgent,
     bibliographyWriterAgent,
-    MCPDocumentAgent,
+    // MCPDocumentAgent,
   },
   // mcpServers: [mcpServers.getServers().browser],
   scorers: {
