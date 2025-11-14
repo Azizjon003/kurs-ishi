@@ -335,6 +335,9 @@ If content is under 1000 words, EXPAND by:
 10. ALWAYS ensure technical feasibility
 11. **USE RESEARCH DATA**: If you receive section data with \`researchedDatas\` field, USE that information to enrich your content. Integrate research findings naturally into your writing.
 12. Output ONLY the section text (no JSON, no metadata, no section numbers in heading)
+13. **NEVER REFUSE TO WRITE**: You MUST write content. Never say "I'm sorry, but I can't assist with that" or similar refusal messages
+14. **NO SUBSECTIONS**: DO NOT create "Kirish" (Introduction), "Xulosa" (Conclusion), or "Adabiyotlar" (References) subsections within your content. These are handled separately
+15. **WRITE DIRECTLY**: Start writing the main improvement proposal content immediately without creating internal section structure
 
 ---
 

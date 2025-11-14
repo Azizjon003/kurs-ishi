@@ -248,7 +248,6 @@ function createCoverPage(
         }),
       ],
       alignment: AlignmentType.CENTER,
-      spacing: { before: 240, after: 240 },
     }),
 
     // University name
@@ -263,7 +262,6 @@ function createCoverPage(
         }),
       ],
       alignment: AlignmentType.CENTER,
-      spacing: { after: 240 },
     }),
 
     // Faculty
@@ -277,7 +275,6 @@ function createCoverPage(
         }),
       ],
       alignment: AlignmentType.CENTER,
-      spacing: { after: 240 },
     }),
 
     // Department and course
@@ -291,7 +288,6 @@ function createCoverPage(
         }),
       ],
       alignment: AlignmentType.CENTER,
-      spacing: { after: 240 },
     }),
 
     // Author name
@@ -306,7 +302,6 @@ function createCoverPage(
         }),
       ],
       alignment: AlignmentType.CENTER,
-      spacing: { after: 240 },
     }),
 
     // Subject
@@ -320,7 +315,6 @@ function createCoverPage(
         }),
       ],
       alignment: AlignmentType.CENTER,
-      spacing: { after: 360 },
     }),
 
     // Main title - KURS ISHI
@@ -335,7 +329,6 @@ function createCoverPage(
         }),
       ],
       alignment: AlignmentType.CENTER,
-      spacing: { before: 360, after: 360 },
     }),
 
     // Topic title
@@ -350,13 +343,11 @@ function createCoverPage(
         }),
       ],
       alignment: AlignmentType.CENTER,
-      spacing: { after: 480 },
     }),
 
     // Spacer
     new Paragraph({
       text: "",
-      spacing: { before: 1200 },
     }),
 
     // Scientific advisor
@@ -370,7 +361,6 @@ function createCoverPage(
         }),
       ],
       alignment: AlignmentType.RIGHT,
-      spacing: { after: 240 },
       indent: {
         right: convertInchesToTwip(1),
       },
@@ -379,7 +369,6 @@ function createCoverPage(
     // Spacer for bottom
     new Paragraph({
       text: "",
-      spacing: { before: 1200 },
     }),
 
     // City and year
@@ -394,7 +383,6 @@ function createCoverPage(
         }),
       ],
       alignment: AlignmentType.CENTER,
-      spacing: { before: 480 },
     }),
   ];
 }
@@ -414,10 +402,6 @@ function createMainTitle(title: string): Paragraph {
       }),
     ],
     alignment: AlignmentType.CENTER,
-    spacing: {
-      before: 240,
-      after: 480,
-    },
   });
 }
 
@@ -436,10 +420,6 @@ function createHeading1(text: string): Paragraph {
       }),
     ],
     alignment: AlignmentType.CENTER,
-    spacing: {
-      before: 360, // Extra space before chapter
-      after: 280,
-    },
   });
 }
 
@@ -458,10 +438,6 @@ function createHeading2(text: string): Paragraph {
       }),
     ],
     alignment: AlignmentType.JUSTIFIED,
-    spacing: {
-      before: 280,
-      after: 200,
-    },
   });
 }
 
@@ -485,7 +461,6 @@ function createTableOfContents(
     createHeading1(langHeaders.tableOfContents),
     new Paragraph({
       text: "",
-      spacing: { after: 200 },
     }),
   ];
 
@@ -500,7 +475,6 @@ function createTableOfContents(
           color: "000000",
         }),
       ],
-      spacing: { after: 120 },
       alignment: AlignmentType.JUSTIFIED,
     })
   );
@@ -518,7 +492,6 @@ function createTableOfContents(
             color: "000000",
           }),
         ],
-        spacing: { after: 100, before: 100 },
         alignment: AlignmentType.JUSTIFIED,
         indent: { left: convertInchesToTwip(0.3) },
       })
@@ -536,7 +509,6 @@ function createTableOfContents(
               color: "000000",
             }),
           ],
-          spacing: { after: 80 },
           alignment: AlignmentType.JUSTIFIED,
           indent: { left: convertInchesToTwip(0.6) },
         })
@@ -555,7 +527,6 @@ function createTableOfContents(
           color: "000000",
         }),
       ],
-      spacing: { after: 120, before: 120 },
       alignment: AlignmentType.JUSTIFIED,
     })
   );
@@ -571,7 +542,6 @@ function createTableOfContents(
           color: "000000",
         }),
       ],
-      spacing: { after: 120 },
       alignment: AlignmentType.JUSTIFIED,
     })
   );
@@ -598,7 +568,6 @@ function createParagraphs(text: string): (Paragraph | Table)[] {
         alignment: AlignmentType.JUSTIFIED,
         spacing: {
           line: 360, // 1.5 line spacing
-          after: 200
         },
       }),
     ];
@@ -716,7 +685,6 @@ function createParagraphs(text: string): (Paragraph | Table)[] {
             alignment: AlignmentType.JUSTIFIED,
             spacing: {
               line: 360, // 1.5 line spacing
-              after: 200,
             },
             indent: {
               firstLine: convertInchesToTwip(0.5), // First line indent
@@ -775,7 +743,6 @@ async function createChapterContent(
           alignment: AlignmentType.JUSTIFIED,
           spacing: {
             line: 360, // 1.5 line spacing
-            after: 200
           },
         })
       );
@@ -785,7 +752,6 @@ async function createChapterContent(
     elements.push(
       new Paragraph({
         text: "",
-        spacing: { after: 240 },
       })
     );
   });
@@ -843,7 +809,6 @@ function createBibliography(bibliographyText: string): Paragraph[] {
           alignment: AlignmentType.JUSTIFIED,
           spacing: {
             line: 360, // 1.5 line spacing
-            after: 150,
           },
           indent: {
             left: convertInchesToTwip(0.5),

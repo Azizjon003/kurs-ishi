@@ -190,6 +190,9 @@ If content is over 800 words, REDUCE by:
 7. ALWAYS maintain formal academic style
 8. **USE RESEARCH DATA**: If you receive section data with \`researchedDatas\` field, USE that information to enrich your content. Integrate research findings naturally into your writing.
 9. Output ONLY the section text (no JSON, no metadata, no section numbers in output)
+10. **NEVER REFUSE TO WRITE**: You MUST write content. Never say "I'm sorry, but I can't assist with that" or similar refusal messages
+11. **NO SUBSECTIONS**: DO NOT create "Kirish" (Introduction), "Xulosa" (Conclusion), or "Adabiyotlar" (References) subsections within your content. These are handled separately
+12. **WRITE DIRECTLY**: Start writing the main content immediately without creating internal section structure
 
 ---
 

@@ -165,7 +165,23 @@ const plannerStep = createStep({
     if (!inputData) {
       throw new Error("Input data not found");
     }
-    const prompt = `Create a detailed academic plan for the following topic in ${inputData.language} language:\n\nTopic: ${inputData.name}\n\nPlease structure the course paper according to academic standards with 3 main chapters.`;
+    const prompt = `Create a detailed academic plan for the following topic in ${inputData.language} language:
+
+Topic: ${inputData.name}
+
+REQUIREMENTS:
+- Create exactly 3 main chapters
+- Each chapter should have 3-4 sections
+- Follow academic standards
+
+IMPORTANT RESTRICTIONS:
+✗ DO NOT create sections named "Kirish" (Introduction)
+✗ DO NOT create sections named "Xulosa" (Conclusion)
+✗ DO NOT create sections named "Adabiyotlar" (References)
+✗ These will be added separately
+
+Structure the paper with meaningful section titles that cover the topic comprehensively.`;
+
     const plan = await plannerAgent.generate(
       [{ role: "user", content: prompt }],
       {
@@ -598,16 +614,18 @@ const parallelChaptersStep = createStep({
 
               const prompt =
                 attempts === 1
-                  ? `Write comprehensive ${chapterType.toLowerCase()} content in ${inputData.language} language for this section:
+                  ? `You are writing a section for an academic course paper. Write comprehensive ${chapterType.toLowerCase()} content in ${inputData.language} language.
 
-SECTION INFORMATION:
-${JSON.stringify(section, null, 2)}
+SECTION TITLE: ${section.title}
+CHAPTER: ${chapter.chapterTitle}
+
+RESEARCH DATA:
+${section.researchedDatas || 'No research data available'}
 
 CONTENT REQUIREMENTS:
 - Target length: Approximately ${targetWords} words (~${pagesPerSection} pages)
 - Language: ${inputData.language}
 - ${contentRequirements}
-- Use clear headings and subheadings
 - Include specific examples and detailed explanations
 - Maintain academic writing standards
 
@@ -618,10 +636,18 @@ FORMATTING GUIDELINES:
 ✓ Use bullet points and numbered lists for clarity
 ✓ Provide detailed explanations, not just brief summaries
 
-IMPORTANT: Write detailed, comprehensive content that fills approximately ${pagesPerSection} pages. Ensure high quality, thorough coverage, neutral academic tone, and accurate information.`
+IMPORTANT RESTRICTIONS:
+✗ DO NOT include "Kirish" (Introduction) section
+✗ DO NOT include "Xulosa" (Conclusion) section
+✗ DO NOT include "Foydalanilgan adabiyotlar" (References)
+✗ DO NOT say "I'm sorry" or refuse to write
+✗ Write ONLY the main content for this specific section
+
+Write the complete section content now in ${inputData.language} language with approximately ${targetWords} words:`
                   : `Rewrite and improve the ${chapterType.toLowerCase()} content in ${inputData.language} language:
 
-SECTION: ${section.title}
+SECTION TITLE: ${section.title}
+CHAPTER: ${chapter.chapterTitle}
 
 PREVIOUS QUALITY SCORE: ${((evaluation?.overallScore ?? 0) * 100).toFixed(1)}%
 
@@ -636,7 +662,14 @@ REQUIREMENTS:
 - Maintain comprehensive, detailed coverage
 - Ensure high academic quality
 
-Write improved content now:`;
+IMPORTANT RESTRICTIONS:
+✗ DO NOT include "Kirish" (Introduction) subsection
+✗ DO NOT include "Xulosa" (Conclusion) subsection
+✗ DO NOT include separate References section
+✗ DO NOT refuse to write or say sorry
+✗ Write ONLY the main section content
+
+Write the improved section content now in ${inputData.language} language:`;
 
               const content = await agent.generate([
                 {
