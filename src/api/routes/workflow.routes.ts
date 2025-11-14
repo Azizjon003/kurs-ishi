@@ -115,9 +115,9 @@ export function workflowRouter(jobQueue: JobQueue): Router {
    * DELETE /api/v1/workflow/:jobId
    * Delete a workflow job
    */
-  router.delete('/:jobId', (req: Request, res: Response) => {
+  router.delete('/:jobId', async (req: Request, res: Response) => {
     const { jobId } = req.params;
-    const deleted = jobQueue.deleteJob(jobId);
+    const deleted = await jobQueue.deleteJob(jobId);
 
     if (!deleted) {
       throw new NotFoundError(`Job with ID ${jobId} not found or cannot be deleted`);
@@ -134,9 +134,9 @@ export function workflowRouter(jobQueue: JobQueue): Router {
    * POST /api/v1/workflow/:jobId/cancel
    * Cancel a pending workflow job
    */
-  router.post('/:jobId/cancel', (req: Request, res: Response) => {
+  router.post('/:jobId/cancel', async (req: Request, res: Response) => {
     const { jobId } = req.params;
-    const cancelled = jobQueue.cancelJob(jobId);
+    const cancelled = await jobQueue.cancelJob(jobId);
 
     if (!cancelled) {
       throw new NotFoundError(`Job with ID ${jobId} not found or cannot be cancelled`);
@@ -165,14 +165,24 @@ export function workflowRouter(jobQueue: JobQueue): Router {
       throw new ValidationError('Job is not completed yet');
     }
 
-    if (!job.result?.documentPath) {
-      throw new NotFoundError('Document not found');
-    }
+    // Try to get document path from result
+    let documentPath = job.result?.documentPath;
 
-    const documentPath = job.result.documentPath;
+    // If not found, try to construct path from topic
+    if (!documentPath || !existsSync(documentPath)) {
+      const topic = job.input.topic;
+      const sanitizedTopic = topic
+        .toLowerCase()
+        .replace(/[^a-z0-9\s_-]/g, '')
+        .replace(/\s+/g, '_')
+        .substring(0, 50);
 
-    if (!existsSync(documentPath)) {
-      throw new NotFoundError('Document file not found on server');
+      documentPath = `kurs_ishi_${sanitizedTopic}.docx`;
+
+      // If still not found, throw error
+      if (!existsSync(documentPath)) {
+        throw new NotFoundError('Document file not found on server. Path: ' + documentPath);
+      }
     }
 
     const fileName = basename(documentPath);

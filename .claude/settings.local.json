@@ -11,7 +11,11 @@
       "Bash(curl:*)",
       "Bash(npx kill-port:*)",
       "Bash(npm run api:dev:*)",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Bash(taskkill:*)",
+      "Bash(pkill:*)",
+      "Bash(sqlite3:*)",
+      "Bash(test:*)"
     ],
     "deny": [],
     "ask": []

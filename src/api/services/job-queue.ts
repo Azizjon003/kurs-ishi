@@ -2,6 +2,7 @@ import { EventEmitter } from 'events';
 import { randomUUID } from 'crypto';
 import { mastra } from '../../mastra/index.js';
 import type { Job, CreateWorkflowRequest, WorkflowResult } from '../types/index.js';
+import { Database } from './database.js';
 
 // Polyfill browser APIs for Mastra
 if (typeof global !== 'undefined' && !global.window) {
@@ -21,11 +22,52 @@ if (typeof global !== 'undefined' && !global.window) {
 export class JobQueue extends EventEmitter {
   private jobs: Map<string, Job> = new Map();
   private processingJobs: Set<string> = new Set();
-  private maxConcurrentJobs: number = 3;
+  private maxConcurrentJobs: number;
+  private database: Database;
+  private initialized: boolean = false;
 
-  constructor() {
+  constructor(dbPath?: string) {
     super();
-    this.startWorker();
+    this.database = new Database(dbPath);
+    // Get max concurrent jobs from environment or default to 3
+    this.maxConcurrentJobs = parseInt(process.env.MAX_CONCURRENT_JOBS || '3');
+    console.log(`[JobQueue] Max concurrent jobs: ${this.maxConcurrentJobs}`);
+  }
+
+  /**
+   * Initialize the job queue and load existing jobs from database
+   */
+  async initialize(): Promise<void> {
+    if (this.initialized) return;
+
+    try {
+      // Initialize database
+      await this.database.initialize();
+
+      // Load existing jobs from database
+      const existingJobs = await this.database.getAllJobs();
+
+      for (const job of existingJobs) {
+        this.jobs.set(job.id, job);
+
+        // Resume processing jobs that were interrupted
+        if (job.status === 'processing') {
+          job.status = 'pending';
+          await this.database.saveJob(job);
+        }
+      }
+
+      console.log(`[JobQueue] Loaded ${existingJobs.length} jobs from database`);
+
+      this.initialized = true;
+      this.startWorker();
+
+      // Process any pending jobs
+      this.processNextJob();
+    } catch (error) {
+      console.error('[JobQueue] Failed to initialize:', error);
+      throw error;
+    }
   }
 
   /**
@@ -43,6 +85,10 @@ export class JobQueue extends EventEmitter {
     };
 
     this.jobs.set(jobId, job);
+
+    // Save to database
+    await this.database.saveJob(job);
+
     this.emit('job:created', job);
 
     // Trigger processing
@@ -70,7 +116,7 @@ export class JobQueue extends EventEmitter {
   /**
    * Delete a job
    */
-  public deleteJob(jobId: string): boolean {
+  public async deleteJob(jobId: string): Promise<boolean> {
     const job = this.jobs.get(jobId);
     if (!job) return false;
 
@@ -80,6 +126,10 @@ export class JobQueue extends EventEmitter {
     }
 
     this.jobs.delete(jobId);
+
+    // Delete from database
+    await this.database.deleteJob(jobId);
+
     this.emit('job:deleted', jobId);
     return true;
   }
@@ -87,7 +137,7 @@ export class JobQueue extends EventEmitter {
   /**
    * Cancel a job
    */
-  public cancelJob(jobId: string): boolean {
+  public async cancelJob(jobId: string): Promise<boolean> {
     const job = this.jobs.get(jobId);
     if (!job) return false;
 
@@ -95,6 +145,10 @@ export class JobQueue extends EventEmitter {
       job.status = 'failed';
       job.error = 'Job cancelled by user';
       job.completedAt = new Date();
+
+      // Update in database
+      await this.database.saveJob(job);
+
       this.emit('job:cancelled', job);
       return true;
     }
@@ -137,6 +191,10 @@ export class JobQueue extends EventEmitter {
       job.status = 'processing';
       job.startedAt = new Date();
       this.processingJobs.add(jobId);
+
+      // Save to database
+      await this.database.saveJob(job);
+
       this.emit('job:started', job);
 
       console.log(`[JobQueue] Processing job ${jobId}...`);
@@ -150,6 +208,9 @@ export class JobQueue extends EventEmitter {
       job.completedAt = new Date();
       job.progress = 100;
       this.processingJobs.delete(jobId);
+
+      // Save to database
+      await this.database.saveJob(job);
 
       this.emit('job:completed', job);
       console.log(`[JobQueue] Job ${jobId} completed successfully`);
@@ -165,6 +226,9 @@ export class JobQueue extends EventEmitter {
       job.error = error instanceof Error ? error.message : String(error);
       job.completedAt = new Date();
       this.processingJobs.delete(jobId);
+
+      // Save to database
+      await this.database.saveJob(job);
 
       this.emit('job:failed', job);
       console.error(`[JobQueue] Job ${jobId} failed:`, error);
@@ -186,9 +250,13 @@ export class JobQueue extends EventEmitter {
     const { input } = job;
 
     // Create progress callback
-    const onProgress = (step: string, progress: number) => {
+    const onProgress = async (step: string, progress: number) => {
       job.currentStep = step;
       job.progress = progress;
+
+      // Save progress to database
+      await this.database.saveJob(job);
+
       this.emit('job:progress', job);
     };
 
@@ -237,17 +305,20 @@ export class JobQueue extends EventEmitter {
 
       clearInterval(progressInterval);
 
+      console.log('[JobQueue] Workflow result keys:', Object.keys(result || {}));
+      console.log('[JobQueue] Document path from workflow:', result?.document);
+
       return {
-        name: result.name,
-        chapterTitle: result.chapterTitle,
-        language: result.language,
-        introduction: result.introduction,
-        conclusion: result.conclusion,
-        bibliography: result.bibliography,
-        documentPath: result.document,
-        chapters: result.chapters,
-        qualityReport: result.qualityReport,
-        pageCountReport: result.pageCountReport,
+        name: result?.name || 'Untitled',
+        chapterTitle: result?.chapterTitle || '',
+        language: result?.language || input.language,
+        introduction: result?.introduction || '',
+        conclusion: result?.conclusion || '',
+        bibliography: result?.bibliography || '',
+        documentPath: result?.document || '',
+        chapters: result?.chapters || [],
+        qualityReport: result?.qualityReport || '',
+        pageCountReport: result?.pageCountReport || '',
       };
     } catch (error) {
       clearInterval(progressInterval);
@@ -290,7 +361,7 @@ export class JobQueue extends EventEmitter {
    */
   private startWorker(): void {
     // Clean up old completed jobs every hour
-    setInterval(() => {
+    setInterval(async () => {
       const cutoffTime = new Date(Date.now() - 24 * 60 * 60 * 1000); // 24 hours ago
 
       for (const [jobId, job] of this.jobs.entries()) {
@@ -300,8 +371,13 @@ export class JobQueue extends EventEmitter {
           job.completedAt < cutoffTime
         ) {
           this.jobs.delete(jobId);
-          console.log(`[JobQueue] Cleaned up old job ${jobId}`);
         }
+      }
+
+      // Delete old jobs from database
+      const deletedCount = await this.database.deleteOldJobs(cutoffTime);
+      if (deletedCount > 0) {
+        console.log(`[JobQueue] Cleaned up ${deletedCount} old jobs from database`);
       }
     }, 60 * 60 * 1000); // Every hour
 

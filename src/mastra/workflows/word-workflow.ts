@@ -1,3 +1,35 @@
+/**
+ * Academic Paper Generator Workflow with Parallel Processing & Dynamic Page Management
+ *
+ * This workflow generates academic course papers with the following features:
+ *
+ * 1. PARALLEL RESEARCH: All sections across all chapters are researched simultaneously
+ *    - Uses Promise.all() to research multiple sections concurrently
+ *    - Significantly reduces research time for papers with many sections
+ *
+ * 2. PARALLEL CONTENT WRITING: All chapters and their sections are written in parallel
+ *    - Theory, Analysis, and Improvement chapters process simultaneously
+ *    - Within each chapter, all sections are also written in parallel
+ *    - Double-level parallelization for maximum performance
+ *
+ * 3. DYNAMIC PAGE COUNT MANAGEMENT: Content length adapts to target page count
+ *    - Automatically calculates pages per section based on total target pages
+ *    - Introduction: ~5% of total pages
+ *    - Main content: Distributed evenly across all sections
+ *    - Conclusion: ~5% of total pages
+ *    - Example: 50 pages → ~2-3 pages intro, ~40 pages content, ~2-3 pages conclusion
+ *
+ * 4. RICH CONTENT FORMATTING: Includes tables, formulas, and diagrams
+ *    - Theory chapters: Mathematical formulas, definitions, comparative tables
+ *    - Analysis chapters: Data tables, case studies, statistical information
+ *    - Improvement chapters: Architecture diagrams, budget tables, timelines
+ *
+ * 5. QUALITY EVALUATION: Each section is evaluated and can be regenerated up to 2 times
+ *
+ * Based on Mastra AI workflow best practices for parallel execution
+ * Reference: https://mastra.ai/docs/workflows/control-flow
+ */
+
 import { createWorkflow, createStep } from "@mastra/core/workflows";
 import { z } from "zod";
 import { topicAgent } from "../agents/topic-agent";
@@ -173,7 +205,7 @@ const plannerStep = createStep({
 
 const researchStep = createStep({
   id: "research-step",
-  description: "Research the content",
+  description: "Research the content in parallel for all sections",
   inputSchema: z.object({
     name: z.string(),
     chapterTitle: z.string(),
@@ -225,20 +257,43 @@ const researchStep = createStep({
     if (!inputData) {
       throw new Error("Input data not found");
     }
+
+    console.log("\n" + "=".repeat(60));
+    console.log("🔬 RESEARCHING ALL SECTIONS IN PARALLEL");
+    console.log("=".repeat(60));
+
     const inputDatas: any = { ...inputData };
-    for (const [i, chapter] of inputData.chapters.entries()) {
-      for (const [j, section] of chapter.sections.entries()) {
-        const sectionText = `Research this section in ${inputData.language} language:\n\nTitle: ${section.title}`;
+
+    // Process all chapters and their sections in parallel
+    const allResearchPromises = inputData.chapters.flatMap((chapter, chapterIndex) =>
+      chapter.sections.map(async (section, sectionIndex) => {
+        console.log(`📖 Researching: ${chapter.chapterTitle} - ${section.title}`);
+
+        const sectionText = `Research this section in ${inputData.language} language:\n\nTitle: ${section.title}\n\nChapter: ${chapter.chapterTitle}`;
         const researchData = await researchAgent.generate([
           {
             role: "user",
             content: sectionText,
           },
         ]);
-        inputDatas.chapters[i].sections[j]["researchedDatas"] =
-          researchData.text;
-      }
-    }
+
+        return {
+          chapterIndex,
+          sectionIndex,
+          researchedDatas: researchData.text,
+        };
+      })
+    );
+
+    // Wait for all research to complete
+    const allResearchResults = await Promise.all(allResearchPromises);
+
+    // Update the data structure with research results
+    allResearchResults.forEach(({ chapterIndex, sectionIndex, researchedDatas }) => {
+      inputDatas.chapters[chapterIndex].sections[sectionIndex]["researchedDatas"] = researchedDatas;
+    });
+
+    console.log(`✅ All ${allResearchResults.length} sections researched in parallel!`);
 
     return inputDatas;
   },
@@ -316,14 +371,61 @@ const introStep = createStep({
     let currentIntro = "";
     let evaluation: EvaluationResult | undefined;
 
+    // Calculate target length for introduction (typically 1-2 pages)
+    const introPages = Math.max(1, Math.ceil(inputData.pageCount * 0.05)); // 5% of total pages
+    const introWords = introPages * 280;
+
+    console.log(`📖 Introduction target: ~${introPages} pages (${introWords} words)`);
+
     // Try up to 3 times to get quality content
     while (attempts < 3) {
       attempts++;
 
       const prompt =
         attempts === 1
-          ? `Write an academic introduction in ${inputData.language} language for the following course paper structure:\n\n${JSON.stringify(inputDatas)}\n\nIMPORTANT: Ensure high quality, comprehensive coverage, neutral tone, and accurate information.`
-          : `Write an academic introduction in ${inputData.language} language for the following course paper structure:\n\n${JSON.stringify(inputDatas)}\n\nIMPORTANT: Ensure high quality, comprehensive coverage, neutral tone, and accurate information. Previous attempt scored ${((evaluation?.overallScore ?? 0) * 100).toFixed(1)}%. Improve based on feedback: ${evaluation?.details ?? ""}`;
+          ? `Write a comprehensive academic introduction in ${inputData.language} language for this course paper:
+
+PAPER STRUCTURE:
+${JSON.stringify({
+  name: inputDatas.name,
+  chapterTitle: inputDatas.chapterTitle,
+  chapters: inputDatas.chapters.map((ch: any) => ({
+    chapterTitle: ch.chapterTitle,
+    sections: ch.sections.map((s: any) => s.title)
+  }))
+}, null, 2)}
+
+CONTENT REQUIREMENTS:
+- Target length: Approximately ${introWords} words (~${introPages} pages)
+- Language: ${inputData.language}
+- Present the topic's relevance and importance
+- State research objectives and goals
+- Outline the paper structure
+- Provide background context
+- Include key definitions if necessary
+- Use tables or lists where appropriate for clarity
+
+ACADEMIC STANDARDS:
+✓ Clear thesis statement
+✓ Proper context and motivation
+✓ Comprehensive scope definition
+✓ High-quality academic writing
+✓ Neutral, objective tone
+✓ Logical flow and structure
+
+Write a detailed, well-structured introduction of approximately ${introPages} pages.`
+          : `Rewrite and improve the academic introduction in ${inputData.language} language:
+
+PAPER: ${inputDatas.name}
+
+PREVIOUS QUALITY SCORE: ${((evaluation?.overallScore ?? 0) * 100).toFixed(1)}%
+
+IMPROVEMENT FEEDBACK:
+${evaluation?.details ?? ""}
+
+TARGET LENGTH: ${introWords} words (~${introPages} pages)
+
+Address all feedback points and ensure comprehensive, high-quality content.`;
 
       const introduction = await introWriterAgent.generate([
         {
@@ -371,244 +473,7 @@ const introStep = createStep({
   },
 });
 
-const theoryStep = createStep({
-  id: "theory-step",
-  description: "Write the theory with quality evaluation",
-  inputSchema: z.object({
-    name: z.string(),
-    chapterTitle: z.string(),
-    language: z.string(),
-    introduction: z.string(),
-    introductionEvaluation: z.any().optional(),
-    chapters: z.array(
-      z.object({
-        chapterTitle: z.string(),
-        sections: z.array(
-          z.object({
-            title: z.string(),
-            researchedDatas: z.string(),
-          })
-        ),
-      })
-    ),
-  }),
-  outputSchema: z.object({
-    name: z.string(),
-    chapterTitle: z.string(),
-    language: z.string(),
-    introduction: z.string(),
-    introductionEvaluation: z.any().optional(),
-    chapters: z.array(
-      z.object({
-        chapterTitle: z.string(),
-        sections: z.array(
-          z.object({
-            title: z.string(),
-            content: z.string().optional(),
-            researchedDatas: z.string(),
-            evaluation: z
-              .object({
-                passed: z.boolean(),
-                score: z.number(),
-                details: z.string(),
-                attempts: z.number(),
-              })
-              .optional(),
-          })
-        ),
-      })
-    ),
-  }),
-  execute: async ({ inputData }) => {
-    if (!inputData) {
-      throw new Error("Input data not found");
-    }
-
-    console.log("\n" + "=".repeat(60));
-    console.log("✍️  WRITING THEORY CHAPTER");
-    console.log("=".repeat(60));
-
-    const inputDatas: any = inputData;
-    const chaptesTherory = inputData.chapters[0];
-
-    for (const [i, section] of chaptesTherory.sections.entries()) {
-      console.log(`\n📝 Section: ${section.title}`);
-
-      let attempts = 0;
-      let currentContent = "";
-      let evaluation: EvaluationResult | undefined;
-
-      // Try up to 2 times per section
-      while (attempts < 2) {
-        attempts++;
-
-        const prompt =
-          attempts === 1
-            ? `Write the theoretical content in ${inputData.language} language for this section:\n\n${JSON.stringify(section)}\n\nIMPORTANT: Ensure high quality, comprehensive coverage, neutral tone, and accurate information. Use tables, diagrams, and formulas where appropriate.`
-            : `Write the theoretical content in ${inputData.language} language for this section:\n\n${JSON.stringify(section)}\n\nIMPORTANT: Previous attempt scored ${((evaluation?.overallScore ?? 0) * 100).toFixed(1)}%. Improve: ${evaluation?.details ?? ""}`;
-
-        const theory = await theoryWriterAgent.generate([
-          {
-            role: "user",
-            content: prompt,
-          },
-        ]);
-        currentContent = theory.text;
-
-        // Evaluate the section
-        evaluation = await evaluateChapterSection(
-          currentContent,
-          section.title,
-          chaptesTherory.chapterTitle
-        );
-
-        // If passed or last attempt, break
-        if (evaluation?.passed || attempts >= 2) {
-          if (evaluation?.passed) {
-            console.log(
-              `  ✅ Section passed (${((evaluation.overallScore ?? 0) * 100).toFixed(1)}%)`
-            );
-          } else {
-            console.log(
-              `  ⚠️  Section quality: ${((evaluation?.overallScore ?? 0) * 100).toFixed(1)}% (accepting best attempt)`
-            );
-          }
-          break;
-        }
-
-        console.log(`  🔄 Regenerating section...`);
-      }
-
-      inputDatas.chapters[0].sections[i].content = currentContent;
-      inputDatas.chapters[0].sections[i].evaluation = {
-        passed: evaluation?.passed ?? false,
-        score: evaluation?.overallScore ?? 0,
-        details: evaluation?.details ?? "No evaluation performed",
-        attempts,
-      };
-    }
-
-    return inputDatas;
-  },
-});
-
-const AnalysisWritingStep = createStep({
-  id: "analysis-writing-step",
-  description: "Write the analysis with quality evaluation",
-  inputSchema: z.object({
-    name: z.string(),
-    chapterTitle: z.string(),
-    language: z.string(),
-    introduction: z.string(),
-    introductionEvaluation: z.any().optional(),
-    chapters: z.array(
-      z.object({
-        chapterTitle: z.string(),
-        sections: z.array(
-          z.object({
-            title: z.string(),
-            content: z.string().optional(),
-            researchedDatas: z.string(),
-            evaluation: z.any().optional(),
-          })
-        ),
-      })
-    ),
-  }),
-  outputSchema: z.object({
-    name: z.string(),
-    chapterTitle: z.string(),
-    language: z.string(),
-    introduction: z.string(),
-    introductionEvaluation: z.any().optional(),
-    chapters: z.array(
-      z.object({
-        chapterTitle: z.string(),
-        sections: z.array(
-          z.object({
-            title: z.string(),
-            content: z.string().optional(),
-            researchedDatas: z.string(),
-            evaluation: z.any().optional(),
-          })
-        ),
-      })
-    ),
-  }),
-  execute: async ({ inputData }) => {
-    if (!inputData) {
-      throw new Error("Input data not found");
-    }
-
-    console.log("\n" + "=".repeat(60));
-    console.log("✍️  WRITING ANALYSIS CHAPTER");
-    console.log("=".repeat(60));
-
-    const inputDatas: any = inputData;
-    const chaptersAnalysis = inputData.chapters[1];
-
-    for (const [i, section] of chaptersAnalysis.sections.entries()) {
-      console.log(`\n📝 Section: ${section.title}`);
-
-      let attempts = 0;
-      let currentContent = "";
-      let evaluation: EvaluationResult | undefined;
-
-      // Try up to 2 times per section
-      while (attempts < 2) {
-        attempts++;
-
-        const prompt =
-          attempts === 1
-            ? `Write the analytical content in ${inputData.language} language for this section:\n\n${JSON.stringify(section)}\n\nIMPORTANT: Ensure high quality, comprehensive coverage, neutral tone, and accurate information. Use comparison tables, case studies, and data analysis where appropriate.`
-            : `Write the analytical content in ${inputData.language} language for this section:\n\n${JSON.stringify(section)}\n\nIMPORTANT: Previous attempt scored ${((evaluation?.overallScore ?? 0) * 100).toFixed(1)}%. Improve: ${evaluation?.details ?? ""}`;
-
-        const analysis = await analysisWriterAgent.generate([
-          {
-            role: "user",
-            content: prompt,
-          },
-        ]);
-        currentContent = analysis.text;
-
-        // Evaluate the section
-        evaluation = await evaluateChapterSection(
-          currentContent,
-          section.title,
-          chaptersAnalysis.chapterTitle
-        );
-
-        // If passed or last attempt, break
-        if (evaluation?.passed || attempts >= 2) {
-          if (evaluation?.passed) {
-            console.log(
-              `  ✅ Section passed (${((evaluation.overallScore ?? 0) * 100).toFixed(1)}%)`
-            );
-          } else {
-            console.log(
-              `  ⚠️  Section quality: ${((evaluation?.overallScore ?? 0) * 100).toFixed(1)}% (accepting best attempt)`
-            );
-          }
-          break;
-        }
-
-        console.log(`  🔄 Regenerating section...`);
-      }
-
-      inputDatas.chapters[1].sections[i].content = currentContent;
-      inputDatas.chapters[1].sections[i].evaluation = {
-        passed: evaluation?.passed ?? false,
-        score: evaluation?.overallScore ?? 0,
-        details: evaluation?.details ?? "No evaluation performed",
-        attempts,
-      };
-    }
-
-    return inputDatas;
-  },
-});
-
-// Combined parallel chapters step
+// Combined parallel chapters step - replaces theoryStep, AnalysisWritingStep, and ImprovementWriterAgent
 const parallelChaptersStep = createStep({
   id: "parallel-chapters-step",
   description: "Write Theory, Analysis, and Improvement chapters in parallel",
@@ -672,10 +537,20 @@ const parallelChaptersStep = createStep({
     }
 
     console.log("\n" + "=".repeat(60));
-    console.log("⚡ WRITING ALL CHAPTERS IN PARALLEL");
+    console.log("⚡ WRITING ALL CHAPTERS AND SECTIONS IN PARALLEL");
     console.log("=".repeat(60));
 
     const inputDatas: any = { ...inputData };
+
+    // Calculate pages per section based on total page count
+    // Formula: (Target Pages - Cover - Intro - Conclusion - Bibliography) / Total Sections
+    const totalSections = inputData.chapters.reduce((sum: number, ch: any) => sum + ch.sections.length, 0);
+    const contentPages = inputData.pageCount - 5; // Reserve 5 pages for intro, conclusion, bibliography, cover
+    const pagesPerSection = Math.max(1, Math.floor(contentPages / totalSections));
+
+    console.log(`📊 Target: ${inputData.pageCount} pages total`);
+    console.log(`📄 Content pages: ${contentPages} | Sections: ${totalSections}`);
+    console.log(`📖 Pages per section: ~${pagesPerSection} pages`);
 
     // Process all three chapters in parallel
     const chapterPromises = inputData.chapters.map(
@@ -697,69 +572,121 @@ const parallelChaptersStep = createStep({
           `\n📚 Starting ${chapterType} Chapter: ${chapter.chapterTitle}`
         );
 
-        const processedSections = [];
+        // Process all sections in this chapter in parallel
+        const sectionPromises = chapter.sections.map(
+          async (section: any, sectionIndex: number) => {
+            console.log(`\n📝 ${chapterType} - Section ${sectionIndex + 1}: ${section.title}`);
 
-        for (const [sectionIndex, section] of chapter.sections.entries()) {
-          console.log(`\n📝 ${chapterType} - Section: ${section.title}`);
+            let attempts = 0;
+            let currentContent = "";
+            let evaluation: EvaluationResult | undefined;
 
-          let attempts = 0;
-          let currentContent = "";
-          let evaluation: EvaluationResult | undefined;
+            // Calculate target word count (roughly 250-300 words per page)
+            const targetWords = pagesPerSection * 280;
 
-          // Try up to 2 times per section
-          while (attempts < 2) {
-            attempts++;
+            // Determine content requirements based on chapter type
+            const contentRequirements =
+              chapterIndex === 0
+                ? "Include theoretical foundations, definitions, formulas (using mathematical notation), comparative tables, conceptual diagrams, and scholarly references."
+                : chapterIndex === 1
+                ? "Include data analysis, comparison tables, case studies, statistical information, charts descriptions, and evidence-based findings."
+                : "Include improvement proposals, architecture diagrams, implementation tables, technology specifications, budget tables, timeline charts, and practical recommendations.";
 
-            const prompt =
-              attempts === 1
-                ? `Write the ${chapterType.toLowerCase()} content in ${inputData.language} language for this section:\n\n${JSON.stringify(section)}\n\nIMPORTANT: Ensure high quality, comprehensive coverage, neutral tone, and accurate information.`
-                : `Write the ${chapterType.toLowerCase()} content in ${inputData.language} language for this section:\n\n${JSON.stringify(section)}\n\nIMPORTANT: Previous attempt scored ${((evaluation?.overallScore ?? 0) * 100).toFixed(1)}%. Improve: ${evaluation?.details ?? ""}`;
+            // Try up to 2 times per section
+            while (attempts < 2) {
+              attempts++;
 
-            const content = await agent.generate([
-              {
-                role: "user",
-                content: prompt,
-              },
-            ]);
-            currentContent = content.text;
+              const prompt =
+                attempts === 1
+                  ? `Write comprehensive ${chapterType.toLowerCase()} content in ${inputData.language} language for this section:
 
-            // Evaluate the section
-            evaluation = await evaluateChapterSection(
-              currentContent,
-              section.title,
-              chapter.chapterTitle
-            );
+SECTION INFORMATION:
+${JSON.stringify(section, null, 2)}
 
-            // If passed or last attempt, break
-            if (evaluation?.passed || attempts >= 2) {
-              if (evaluation?.passed) {
-                console.log(
-                  `  ✅ ${chapterType} section passed (${((evaluation.overallScore ?? 0) * 100).toFixed(1)}%)`
-                );
-              } else {
-                console.log(
-                  `  ⚠️  ${chapterType} section quality: ${((evaluation?.overallScore ?? 0) * 100).toFixed(1)}% (accepting best attempt)`
-                );
+CONTENT REQUIREMENTS:
+- Target length: Approximately ${targetWords} words (~${pagesPerSection} pages)
+- Language: ${inputData.language}
+- ${contentRequirements}
+- Use clear headings and subheadings
+- Include specific examples and detailed explanations
+- Maintain academic writing standards
+
+FORMATTING GUIDELINES:
+✓ Use tables for comparing data, specifications, or features
+✓ Include mathematical formulas where relevant (describe them clearly)
+✓ Reference diagrams and figures (describe their content)
+✓ Use bullet points and numbered lists for clarity
+✓ Provide detailed explanations, not just brief summaries
+
+IMPORTANT: Write detailed, comprehensive content that fills approximately ${pagesPerSection} pages. Ensure high quality, thorough coverage, neutral academic tone, and accurate information.`
+                  : `Rewrite and improve the ${chapterType.toLowerCase()} content in ${inputData.language} language:
+
+SECTION: ${section.title}
+
+PREVIOUS QUALITY SCORE: ${((evaluation?.overallScore ?? 0) * 100).toFixed(1)}%
+
+IMPROVEMENT FEEDBACK:
+${evaluation?.details ?? ""}
+
+TARGET LENGTH: ${targetWords} words (~${pagesPerSection} pages)
+
+REQUIREMENTS:
+- ${contentRequirements}
+- Address all feedback points above
+- Maintain comprehensive, detailed coverage
+- Ensure high academic quality
+
+Write improved content now:`;
+
+              const content = await agent.generate([
+                {
+                  role: "user",
+                  content: prompt,
+                },
+              ]);
+              currentContent = content.text;
+
+              // Evaluate the section
+              evaluation = await evaluateChapterSection(
+                currentContent,
+                section.title,
+                chapter.chapterTitle
+              );
+
+              // If passed or last attempt, break
+              if (evaluation?.passed || attempts >= 2) {
+                if (evaluation?.passed) {
+                  console.log(
+                    `  ✅ ${chapterType} section ${sectionIndex + 1} passed (${((evaluation.overallScore ?? 0) * 100).toFixed(1)}%)`
+                  );
+                } else {
+                  console.log(
+                    `  ⚠️  ${chapterType} section ${sectionIndex + 1} quality: ${((evaluation?.overallScore ?? 0) * 100).toFixed(1)}% (accepting best attempt)`
+                  );
+                }
+                break;
               }
-              break;
+
+              console.log(`  🔄 Regenerating ${chapterType} section ${sectionIndex + 1}...`);
             }
 
-            console.log(`  🔄 Regenerating ${chapterType} section...`);
+            return {
+              ...section,
+              content: currentContent,
+              evaluation: {
+                passed: evaluation?.passed ?? false,
+                score: evaluation?.overallScore ?? 0,
+                details: evaluation?.details ?? "No evaluation performed",
+                attempts,
+              },
+            };
           }
+        );
 
-          processedSections.push({
-            ...section,
-            content: currentContent,
-            evaluation: {
-              passed: evaluation?.passed ?? false,
-              score: evaluation?.overallScore ?? 0,
-              details: evaluation?.details ?? "No evaluation performed",
-              attempts,
-            },
-          });
-        }
+        // Wait for all sections in this chapter to complete
+        const processedSections = await Promise.all(sectionPromises);
 
-        console.log(`✅ ${chapterType} Chapter completed!`);
+        console.log(`✅ ${chapterType} Chapter completed with ${processedSections.length} sections!`);
         return processedSections;
       }
     );
@@ -774,124 +701,8 @@ const parallelChaptersStep = createStep({
     }));
 
     console.log("\n" + "=".repeat(60));
-    console.log("✅ ALL CHAPTERS COMPLETED IN PARALLEL");
+    console.log("✅ ALL CHAPTERS AND SECTIONS COMPLETED IN PARALLEL");
     console.log("=".repeat(60));
-
-    return inputDatas;
-  },
-});
-
-const ImprovementWriterAgent = createStep({
-  id: "improvement-writing-step",
-  description: "Write the improvement proposals with quality evaluation",
-  inputSchema: z.object({
-    name: z.string(),
-    chapterTitle: z.string(),
-    language: z.string(),
-    introduction: z.string(),
-    introductionEvaluation: z.any().optional(),
-    chapters: z.array(
-      z.object({
-        chapterTitle: z.string(),
-        sections: z.array(
-          z.object({
-            title: z.string(),
-            content: z.string().optional(),
-            researchedDatas: z.string(),
-            evaluation: z.any().optional(),
-          })
-        ),
-      })
-    ),
-  }),
-  outputSchema: z.object({
-    name: z.string(),
-    chapterTitle: z.string(),
-    language: z.string(),
-    introduction: z.string(),
-    introductionEvaluation: z.any().optional(),
-    chapters: z.array(
-      z.object({
-        chapterTitle: z.string(),
-        sections: z.array(
-          z.object({
-            title: z.string(),
-            content: z.string(),
-            researchedDatas: z.string(),
-            evaluation: z.any().optional(),
-          })
-        ),
-      })
-    ),
-  }),
-  execute: async ({ inputData }) => {
-    if (!inputData) {
-      throw new Error("Input data not found");
-    }
-
-    console.log("\n" + "=".repeat(60));
-    console.log("✍️  WRITING IMPROVEMENT CHAPTER");
-    console.log("=".repeat(60));
-
-    const inputDatas: any = inputData;
-    const chaptersImprovement = inputData.chapters[2];
-
-    for (const [i, section] of chaptersImprovement.sections.entries()) {
-      console.log(`\n📝 Section: ${section.title}`);
-
-      let attempts = 0;
-      let currentContent = "";
-      let evaluation: EvaluationResult | undefined;
-
-      // Try up to 2 times per section
-      while (attempts < 2) {
-        attempts++;
-
-        const prompt =
-          attempts === 1
-            ? `Write improvement proposals in ${inputData.language} language for this section:\n\n${JSON.stringify(section)}\n\nIMPORTANT: Ensure high quality, comprehensive coverage, neutral tone, and accurate information. Include architecture diagrams, technology specifications, budget tables, and implementation timelines where appropriate.`
-            : `Write improvement proposals in ${inputData.language} language for this section:\n\n${JSON.stringify(section)}\n\nIMPORTANT: Previous attempt scored ${((evaluation?.overallScore ?? 0) * 100).toFixed(1)}%. Improve: ${evaluation?.details ?? ""}`;
-
-        const improvement = await improvementWriterAgent.generate([
-          {
-            role: "user",
-            content: prompt,
-          },
-        ]);
-        currentContent = improvement.text;
-
-        // Evaluate the section
-        evaluation = await evaluateChapterSection(
-          currentContent,
-          section.title,
-          chaptersImprovement.chapterTitle
-        );
-
-        // If passed or last attempt, break
-        if (evaluation?.passed || attempts >= 2) {
-          if (evaluation?.passed) {
-            console.log(
-              `  ✅ Section passed (${((evaluation.overallScore ?? 0) * 100).toFixed(1)}%)`
-            );
-          } else {
-            console.log(
-              `  ⚠️  Section quality: ${((evaluation?.overallScore ?? 0) * 100).toFixed(1)}% (accepting best attempt)`
-            );
-          }
-          break;
-        }
-
-        console.log(`  🔄 Regenerating section...`);
-      }
-
-      inputDatas.chapters[2].sections[i].content = currentContent;
-      inputDatas.chapters[2].sections[i].evaluation = {
-        passed: evaluation?.passed ?? false,
-        score: evaluation?.overallScore ?? 0,
-        details: evaluation?.details ?? "No evaluation performed",
-        attempts,
-      };
-    }
 
     return inputDatas;
   },
@@ -977,6 +788,12 @@ const conclusionStep = createStep({
     let currentConclusion = "";
     let evaluation: EvaluationResult | undefined;
 
+    // Calculate target length for conclusion (typically 1-2 pages)
+    const conclusionPages = Math.max(1, Math.ceil(inputData.pageCount * 0.05)); // 5% of total pages
+    const conclusionWords = conclusionPages * 280;
+
+    console.log(`📖 Conclusion target: ~${conclusionPages} pages (${conclusionWords} words)`);
+
     // Create paper summary for evaluation context
     const paperSummary = `
       Topic: ${inputData.name}
@@ -990,8 +807,43 @@ const conclusionStep = createStep({
 
       const prompt =
         attempts === 1
-          ? `Write an academic conclusion in ${inputData.language} language based on the following course paper content:\n\n${JSON.stringify({ name: inputData.name, chapters: inputData.chapters.map((c: any) => c.chapterTitle) })}\n\nIMPORTANT: Ensure high quality, comprehensive coverage, neutral tone, and accurate information. Summarize key findings and provide recommendations.`
-          : `Write an academic conclusion in ${inputData.language} language based on the following course paper content:\n\n${JSON.stringify({ name: inputData.name, chapters: inputData.chapters.map((c: any) => c.chapterTitle) })}\n\nIMPORTANT: Previous attempt scored ${((evaluation?.overallScore ?? 0) * 100).toFixed(1)}%. Improve based on feedback: ${evaluation?.details ?? ""}`;
+          ? `Write a comprehensive academic conclusion in ${inputData.language} language for this course paper:
+
+PAPER INFORMATION:
+Topic: ${inputData.name}
+Chapters: ${inputData.chapters.map((c: any) => c.chapterTitle).join(", ")}
+
+CONTENT REQUIREMENTS:
+- Target length: Approximately ${conclusionWords} words (~${conclusionPages} pages)
+- Language: ${inputData.language}
+- Summarize main findings from each chapter
+- Synthesize key conclusions
+- Provide practical recommendations
+- Discuss limitations and future research
+- Use tables or bullet points where appropriate
+
+ACADEMIC STANDARDS:
+✓ Clear summary of key findings
+✓ Synthesis of research results
+✓ Actionable recommendations
+✓ Discussion of implications
+✓ High-quality academic writing
+✓ Neutral, objective tone
+✓ Logical conclusion to the paper
+
+Write a detailed, comprehensive conclusion of approximately ${conclusionPages} pages that effectively wraps up the research.`
+          : `Rewrite and improve the academic conclusion in ${inputData.language} language:
+
+PAPER: ${inputData.name}
+
+PREVIOUS QUALITY SCORE: ${((evaluation?.overallScore ?? 0) * 100).toFixed(1)}%
+
+IMPROVEMENT FEEDBACK:
+${evaluation?.details ?? ""}
+
+TARGET LENGTH: ${conclusionWords} words (~${conclusionPages} pages)
+
+Ensure comprehensive coverage of all findings, clear recommendations, and high-quality academic writing.`;
 
       const conclusion = await conclusionWriterAgent.generate([
         {

@@ -95,6 +95,11 @@ export class APIServer {
 
   public async start(): Promise<void> {
     try {
+      // Initialize job queue and load existing jobs from database
+      console.log('[Server] Initializing job queue...');
+      await this.jobQueue.initialize();
+      console.log('[Server] Job queue initialized successfully');
+
       this.app.listen(PORT, () => {
         console.log(`
 ╔═══════════════════════════════════════════════════════════╗
@@ -104,6 +109,7 @@ export class APIServer {
 ║   Port:          ${PORT}                                  ║
 ║   Version:       ${API_VERSION}                           ║
 ║   Environment:   ${process.env.NODE_ENV || "development"} ║
+║   Database:      Persistent storage enabled ✓             ║
 ║                                                           ║
 ║   Endpoints:                                              ║
 ║   - Health:      http://localhost:${PORT}/health          ║
