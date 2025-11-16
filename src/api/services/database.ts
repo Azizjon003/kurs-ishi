@@ -1,15 +1,26 @@
 import { createClient } from '@libsql/client';
 import type { Job } from '../types/index.js';
+import { mkdirSync, existsSync } from 'fs';
+import { dirname } from 'path';
 
 export class Database {
   private client: ReturnType<typeof createClient>;
   private initialized = false;
 
   constructor(dbPath: string = './data/jobs.db') {
+    // Ensure the directory exists
+    const directory = dirname(dbPath);
+    if (!existsSync(directory)) {
+      console.log(`[Database] Creating directory: ${directory}`);
+      mkdirSync(directory, { recursive: true });
+    }
+
     // Create local SQLite database
     this.client = createClient({
       url: `file:${dbPath}`
     });
+
+    console.log(`[Database] Database path: ${dbPath}`);
   }
 
   /**
