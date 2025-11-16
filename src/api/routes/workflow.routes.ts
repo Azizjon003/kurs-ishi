@@ -3,7 +3,18 @@ import { JobQueue } from '../services/job-queue.js';
 import { CreateWorkflowRequestSchema, ValidationError, NotFoundError } from '../types/index.js';
 import { z } from 'zod';
 import { createReadStream, existsSync } from 'fs';
-import { basename } from 'path';
+import { basename, join } from 'path';
+
+/**
+ * Helper function to sanitize filename (matches logic in wordDocumentGenerator)
+ */
+function sanitizeFileName(name: string): string {
+  return name
+    .replace(/[^a-zA-Z0-9_\s-]/g, '')
+    .replace(/\s+/g, '_')
+    .toLowerCase()
+    .substring(0, 50);
+}
 
 export function workflowRouter(jobQueue: JobQueue): Router {
   const router = Router();
@@ -168,29 +179,65 @@ export function workflowRouter(jobQueue: JobQueue): Router {
     // Try to get document path from result
     let documentPath = job.result?.documentPath;
 
-    // If not found, try to construct path from topic
+    // If not found or file doesn't exist, try to construct path from topic
     if (!documentPath || !existsSync(documentPath)) {
+      console.log(`[Download] Document path from result not found or invalid: ${documentPath}`);
+      console.log(`[Download] Attempting to construct fallback path...`);
+
       const topic = job.input.topic;
-      const sanitizedTopic = topic
-        .toLowerCase()
-        .replace(/[^a-z0-9\s_-]/g, '')
-        .replace(/\s+/g, '_')
-        .substring(0, 50);
+      const safeFileName = sanitizeFileName(topic);
+      const fileName = `kurs_ishi_${safeFileName}.docx`;
 
-      documentPath = `kurs_ishi_${sanitizedTopic}.docx`;
+      // Construct full path using current working directory (same as document generator)
+      documentPath = join(process.cwd(), fileName);
 
-      // If still not found, throw error
+      console.log(`[Download] Constructed fallback path: ${documentPath}`);
+
+      // If still not found, throw detailed error
       if (!existsSync(documentPath)) {
-        throw new NotFoundError('Document file not found on server. Path: ' + documentPath);
+        throw new NotFoundError(
+          `Document file not found on server.\n` +
+          `Original path from result: ${job.result?.documentPath || 'N/A'}\n` +
+          `Fallback path: ${documentPath}\n` +
+          `Job ID: ${jobId}\n` +
+          `Topic: ${topic}`
+        );
       }
     }
 
     const fileName = basename(documentPath);
 
+    console.log(`[Download] Serving file: ${documentPath}`);
+    console.log(`[Download] Filename: ${fileName}`);
+
+    // Set response headers
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
     res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
 
+    // Create file stream with error handling
     const fileStream = createReadStream(documentPath);
+
+    fileStream.on('error', (error) => {
+      console.error(`[Download] Error streaming file: ${error.message}`);
+      if (!res.headersSent) {
+        res.status(500).json({
+          success: false,
+          error: 'Failed to stream document file',
+          message: error.message,
+          timestamp: new Date().toISOString()
+        });
+      }
+    });
+
+    fileStream.on('open', () => {
+      console.log(`[Download] File stream opened successfully`);
+    });
+
+    fileStream.on('end', () => {
+      console.log(`[Download] File stream completed`);
+    });
+
+    // Pipe the file to response
     fileStream.pipe(res);
   });
 

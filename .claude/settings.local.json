@@ -15,7 +15,9 @@
       "Bash(taskkill:*)",
       "Bash(pkill:*)",
       "Bash(sqlite3:*)",
-      "Bash(test:*)"
+      "Bash(test:*)",
+      "Bash(npm run build:api:*)",
+      "Bash(npm run:*)"
     ],
     "deny": [],
     "ask": []

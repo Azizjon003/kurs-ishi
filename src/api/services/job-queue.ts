@@ -214,6 +214,7 @@ export class JobQueue extends EventEmitter {
 
       this.emit('job:completed', job);
       console.log(`[JobQueue] Job ${jobId} completed successfully`);
+      console.log(`[JobQueue] Document saved at: ${job.result?.documentPath || 'N/A'}`);
 
       // Send webhook if provided
       if (job.input.webhookUrl) {
@@ -308,18 +309,33 @@ export class JobQueue extends EventEmitter {
       console.log('[JobQueue] Workflow result keys:', Object.keys(result || {}));
       console.log('[JobQueue] Document path from workflow:', result?.document);
 
-      return {
+      // Validate document path exists
+      const documentPath = result?.document || '';
+      if (documentPath) {
+        console.log('[JobQueue] Document path validation:', {
+          path: documentPath,
+          exists: require('fs').existsSync(documentPath),
+        });
+      } else {
+        console.warn('[JobQueue] WARNING: Document path is empty!');
+      }
+
+      const workflowResult = {
         name: result?.name || 'Untitled',
         chapterTitle: result?.chapterTitle || '',
         language: result?.language || input.language,
         introduction: result?.introduction || '',
         conclusion: result?.conclusion || '',
         bibliography: result?.bibliography || '',
-        documentPath: result?.document || '',
+        documentPath: documentPath,
         chapters: result?.chapters || [],
         qualityReport: result?.qualityReport || '',
         pageCountReport: result?.pageCountReport || '',
       };
+
+      console.log('[JobQueue] Workflow result prepared with documentPath:', workflowResult.documentPath);
+
+      return workflowResult;
     } catch (error) {
       clearInterval(progressInterval);
       throw error;
