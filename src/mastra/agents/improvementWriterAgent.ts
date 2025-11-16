@@ -16,6 +16,55 @@ Write a **concise 2-3 page section** (600-800 words) for a SINGLE subsection of 
 
 ---
 
+📚 **USING RESEARCH DATA:**
+
+**CRITICAL: You will receive comprehensive research data for this section. USE IT EXTENSIVELY!**
+
+The research data includes:
+- ✅ **Technology specifications** - Specific tools, versions, architectures
+- ✅ **Implementation examples** - Real companies, projects, success stories
+- ✅ **Performance metrics** - Throughput, latency, accuracy benchmarks
+- ✅ **Cost data** - Implementation costs, ROI, savings estimates
+- ✅ **Best practices** - Industry standards, proven methodologies
+- ✅ **Technical details** - System architectures, integration patterns
+- ✅ **Citations** - Reference sources provided as [S1], [S2], etc.
+
+**How to use research data for improvement proposals:**
+
+1. **Build On Real Implementations**:
+   - Use architectures from research as templates
+   - Reference technologies with exact versions: "Python 3.11, TensorFlow 2.15"
+   - Cite real-world performance: "Capital One achieved 99.99% uptime [S7]"
+   - Adapt proven solutions rather than inventing from scratch
+
+2. **Use Specific Technologies**:
+   - Research provides technology stacks - USE THEM
+   - If research mentions "Apache Kafka 3.6 for message queue" - include this
+   - If research cites "PostgreSQL 16 with 64GB RAM" - specify this
+   - Always include version numbers from research
+
+3. **Ground Proposals in Data**:
+   - Use cost estimates from research case studies
+   - Reference implementation timelines from real examples
+   - Quote performance metrics from similar implementations
+   - Cite team sizes and resource requirements from case studies
+
+4. **Justify With Evidence**:
+   - "This approach is proven - Company X achieved Y result [SZ]"
+   - "According to study [S3], this technology delivers 95% accuracy"
+   - "Industry data shows $X ROI for similar implementations [S5]"
+   - Back every technical choice with research evidence
+
+**Example of good research data usage for improvements:**
+
+Research provides: "Kafka 3.6 handles 100K+ queries/sec with <5ms latency. Capital One used 3-node cluster achieving 99.99% availability [S4]"
+
+Your writing: "Ma'lumotlar oqimini qayta ishlash uchun Apache Kafka 3.6 xabar navbati tizimidan foydalanish tavsiya etiladi. Ushbu texnologiya 100,000+ so'rovni soniyada qayta ishlash qobiliyatiga ega bo'lib, kechikish 5 millisekunddan kam [S4]. Capital One kompaniyasining tajribasida 3 serverli Kafka klasteri 99.99% ishonchlilikni ta'minladi [S4]. Bizning loyihamiz uchun xuddi shunday konfiguratsiya yetarli bo'ladi..."
+
+**Research data is your blueprint - use it to create realistic, proven proposals!**
+
+---
+
 📋 **Content Structure:**
 
 Write in a NATURAL, FLOWING style - NOT overly structured. Your section should flow naturally like a well-written technical proposal.

@@ -281,35 +281,44 @@ const researchStep = createStep({
     const inputDatas: any = { ...inputData };
 
     // Process all chapters and their sections in parallel
-    const allResearchPromises = inputData.chapters.flatMap((chapter, chapterIndex) =>
-      chapter.sections.map(async (section, sectionIndex) => {
-        console.log(`📖 Researching: ${chapter.chapterTitle} - ${section.title}`);
+    const allResearchPromises = inputData.chapters.flatMap(
+      (chapter, chapterIndex) =>
+        chapter.sections.map(async (section, sectionIndex) => {
+          console.log(
+            `📖 Researching: ${chapter.chapterTitle} - ${section.title}`
+          );
 
-        const sectionText = `Research this section in ${inputData.language} language:\n\nTitle: ${section.title}\n\nChapter: ${chapter.chapterTitle}`;
-        const researchData = await researchAgent.generate([
-          {
-            role: "user",
-            content: sectionText,
-          },
-        ]);
+          const sectionText = `Research this section in ${inputData.language} language:\n\nTitle: ${section.title}\n\nChapter: ${chapter.chapterTitle}`;
+          const researchData = await researchAgent.generate([
+            {
+              role: "user",
+              content: sectionText,
+            },
+          ]);
 
-        return {
-          chapterIndex,
-          sectionIndex,
-          researchedDatas: researchData.text,
-        };
-      })
+          return {
+            chapterIndex,
+            sectionIndex,
+            researchedDatas: researchData.text,
+          };
+        })
     );
 
     // Wait for all research to complete
     const allResearchResults = await Promise.all(allResearchPromises);
 
     // Update the data structure with research results
-    allResearchResults.forEach(({ chapterIndex, sectionIndex, researchedDatas }) => {
-      inputDatas.chapters[chapterIndex].sections[sectionIndex]["researchedDatas"] = researchedDatas;
-    });
+    allResearchResults.forEach(
+      ({ chapterIndex, sectionIndex, researchedDatas }) => {
+        inputDatas.chapters[chapterIndex].sections[sectionIndex][
+          "researchedDatas"
+        ] = researchedDatas;
+      }
+    );
 
-    console.log(`✅ All ${allResearchResults.length} sections researched in parallel!`);
+    console.log(
+      `✅ All ${allResearchResults.length} sections researched in parallel!`
+    );
 
     return inputDatas;
   },
@@ -391,7 +400,9 @@ const introStep = createStep({
     const introPages = Math.max(1, Math.ceil(inputData.pageCount * 0.05)); // 5% of total pages
     const introWords = introPages * 280;
 
-    console.log(`📖 Introduction target: ~${introPages} pages (${introWords} words)`);
+    console.log(
+      `📖 Introduction target: ~${introPages} pages (${introWords} words)`
+    );
 
     // Try up to 3 times to get quality content
     while (attempts < 3) {
@@ -399,38 +410,96 @@ const introStep = createStep({
 
       const prompt =
         attempts === 1
-          ? `Write a comprehensive academic introduction in ${inputData.language} language for this course paper:
+          ? `Write a comprehensive academic introduction (KIRISH) in ${inputData.language} language for this course paper:
 
 PAPER STRUCTURE:
-${JSON.stringify({
-  name: inputDatas.name,
-  chapterTitle: inputDatas.chapterTitle,
-  chapters: inputDatas.chapters.map((ch: any) => ({
-    chapterTitle: ch.chapterTitle,
-    sections: ch.sections.map((s: any) => s.title)
-  }))
-}, null, 2)}
+${JSON.stringify(
+  {
+    name: inputDatas.name,
+    chapterTitle: inputDatas.chapterTitle,
+    chapters: inputDatas.chapters.map((ch: any) => ({
+      chapterTitle: ch.chapterTitle,
+      sections: ch.sections.map((s: any) => s.title),
+    })),
+  },
+  null,
+  2
+)}
 
 CONTENT REQUIREMENTS:
 - Target length: Approximately ${introWords} words (~${introPages} pages)
 - Language: ${inputData.language}
-- Present the topic's relevance and importance
-- State research objectives and goals
-- Outline the paper structure
-- Provide background context
-- Include key definitions if necessary
-- Use tables or lists where appropriate for clarity
+
+CRITICAL STRUCTURE - The introduction MUST include these specific sections in order:
+
+1. **Mavzuning dolzarbligi** (Relevance/Importance of the Topic) [30-35% of introduction]
+   - Explain why this topic is important and relevant today
+   - Provide multiple reasons (birinchidan, ikkinchidan, uchinchidan, to'rtinchidan...)
+   - Connect the topic to current issues, practical needs, or scientific developments
+   - Explain the significance for the field of study
+   - Discuss contemporary relevance and modern applications
+
+2. **Hisobotning maqsad va vazifalari** (Goals and Objectives of the Report) [25-30% of introduction]
+   - Clearly state the main goal (maqsad) of the research
+   - List specific objectives (vazifalar) as bullet points or numbered list
+   - Each objective should be clear, specific, and measurable
+   - Objectives should flow logically from the stated goal
+   - Typically 5-7 specific objectives
+
+3. **Hisobotning ilmiy yangiligi** (Scientific Novelty of the Report) [20-25% of introduction]
+   - Explain what is new or original about this research
+   - Describe unique contributions to the field
+   - Highlight new methodologies, approaches, or perspectives
+   - Explain how this work differs from previous research
+   - Present as bullet points for clarity
+
+4. **Hisobotning amaliy ahamiyati** (Practical Significance) [Optional, 10-15%]
+   - Explain practical applications of the research
+   - Describe how findings can be used in practice
+   - Mention potential beneficiaries
+
+5. **Hisobotning tuzilishi** (Structure of the Report) [10-15% of introduction]
+   - Briefly outline the paper structure
+   - Mention introduction, chapters, conclusion, bibliography
+   - Give 1-2 sentence summary of each chapter's content
+
+FORMATTING GUIDELINES:
+✓ Use clear section headings for each part (Mavzuning dolzarbligi:, Hisobotning maqsad va vazifalari:, etc.)
+✓ Use bullet points or numbered lists for objectives and novelty points
+✓ Write in paragraphs within each section
+✓ Maintain formal academic tone
+✓ Use specific, concrete language (avoid vague terms)
+✓ Provide sufficient detail for each section
 
 ACADEMIC STANDARDS:
-✓ Clear thesis statement
-✓ Proper context and motivation
-✓ Comprehensive scope definition
-✓ High-quality academic writing
+✓ Formal academic writing style
+✓ Logical flow and coherent structure
 ✓ Neutral, objective tone
-✓ Logical flow and structure
+✓ Comprehensive coverage of all required sections
+✓ Proper academic terminology
+✓ Clear, well-organized presentation
 
-Write a detailed, well-structured introduction of approximately ${introPages} pages.`
-          : `Rewrite and improve the academic introduction in ${inputData.language} language:
+Example structure (follow this format):
+
+Mavzuning dolzarbligi: [Topic] masalasini o'rganish bir qator sabablarga ko'ra hozirgi kunda ham dolzarb ahamiyatga ega:
+Birinchidan, ...
+Ikkinchidan, ...
+Uchinchidan, ...
+To'rtinchidan, ...
+
+Hisobotning maqsad va vazifalari: Mazkur hisobotning asosiy maqsadi ...
+Ushbu maqsadga erishish uchun quyidagi vazifalar belgilandi:
+- ...
+- ...
+- ...
+
+Hisobotning ilmiy yangiligi: Mazkur hisobotning ilmiy yangiligi quyidagilarida namoyon bo'ladi:
+- ...
+- ...
+- ...
+
+Write a detailed, well-structured introduction of approximately ${introPages} pages following the exact structure above.`
+          : `Rewrite and improve the academic introduction (KIRISH) in ${inputData.language} language:
 
 PAPER: ${inputDatas.name}
 
@@ -441,7 +510,21 @@ ${evaluation?.details ?? ""}
 
 TARGET LENGTH: ${introWords} words (~${introPages} pages)
 
-Address all feedback points and ensure comprehensive, high-quality content.`;
+CRITICAL: Maintain the required structure with these sections:
+1. Mavzuning dolzarbligi (Relevance/Importance of the Topic)
+2. Hisobotning maqsad va vazifalari (Goals and Objectives of the Report)
+3. Hisobotning ilmiy yangiligi (Scientific Novelty of the Report)
+4. Hisobotning amaliy ahamiyati (Practical Significance) [Optional]
+5. Hisobotning tuzilishi (Structure of the Report)
+
+REQUIREMENTS:
+- Use clear section headings (Mavzuning dolzarbligi:, Hisobotning maqsad va vazifalari:, etc.)
+- Use numbered reasons for relevance (Birinchidan, Ikkinchidan, Uchinchidan...)
+- List objectives as bullet points or numbered list
+- List novelty points as bullet points
+- Maintain formal academic tone
+
+Address all feedback points above while following the exact structure required for academic introductions.`;
 
       const introduction = await introWriterAgent.generate([
         {
@@ -560,12 +643,20 @@ const parallelChaptersStep = createStep({
 
     // Calculate pages per section based on total page count
     // Formula: (Target Pages - Cover - Intro - Conclusion - Bibliography) / Total Sections
-    const totalSections = inputData.chapters.reduce((sum: number, ch: any) => sum + ch.sections.length, 0);
+    const totalSections = inputData.chapters.reduce(
+      (sum: number, ch: any) => sum + ch.sections.length,
+      0
+    );
     const contentPages = inputData.pageCount - 5; // Reserve 5 pages for intro, conclusion, bibliography, cover
-    const pagesPerSection = Math.max(1, Math.floor(contentPages / totalSections));
+    const pagesPerSection = Math.max(
+      1,
+      Math.floor(contentPages / totalSections)
+    );
 
     console.log(`📊 Target: ${inputData.pageCount} pages total`);
-    console.log(`📄 Content pages: ${contentPages} | Sections: ${totalSections}`);
+    console.log(
+      `📄 Content pages: ${contentPages} | Sections: ${totalSections}`
+    );
     console.log(`📖 Pages per section: ~${pagesPerSection} pages`);
 
     // Process all three chapters in parallel
@@ -591,7 +682,9 @@ const parallelChaptersStep = createStep({
         // Process all sections in this chapter in parallel
         const sectionPromises = chapter.sections.map(
           async (section: any, sectionIndex: number) => {
-            console.log(`\n📝 ${chapterType} - Section ${sectionIndex + 1}: ${section.title}`);
+            console.log(
+              `\n📝 ${chapterType} - Section ${sectionIndex + 1}: ${section.title}`
+            );
 
             let attempts = 0;
             let currentContent = "";
@@ -605,8 +698,8 @@ const parallelChaptersStep = createStep({
               chapterIndex === 0
                 ? "Include theoretical foundations, definitions, formulas (using mathematical notation), comparative tables, conceptual diagrams, and scholarly references."
                 : chapterIndex === 1
-                ? "Include data analysis, comparison tables, case studies, statistical information, charts descriptions, and evidence-based findings."
-                : "Include improvement proposals, architecture diagrams, implementation tables, technology specifications, budget tables, timeline charts, and practical recommendations.";
+                  ? "Include data analysis, comparison tables, case studies, statistical information, charts descriptions, and evidence-based findings."
+                  : "Include improvement proposals, architecture diagrams, implementation tables, technology specifications, budget tables, timeline charts, and practical recommendations.";
 
             // Try up to 2 times per section
             while (attempts < 2) {
@@ -620,7 +713,7 @@ SECTION TITLE: ${section.title}
 CHAPTER: ${chapter.chapterTitle}
 
 RESEARCH DATA:
-${section.researchedDatas || 'No research data available'}
+${section.researchedDatas || "No research data available"}
 
 CONTENT REQUIREMENTS:
 - Target length: Approximately ${targetWords} words (~${pagesPerSection} pages)
@@ -700,7 +793,9 @@ Write the improved section content now in ${inputData.language} language:`;
                 break;
               }
 
-              console.log(`  🔄 Regenerating ${chapterType} section ${sectionIndex + 1}...`);
+              console.log(
+                `  🔄 Regenerating ${chapterType} section ${sectionIndex + 1}...`
+              );
             }
 
             return {
@@ -719,7 +814,9 @@ Write the improved section content now in ${inputData.language} language:`;
         // Wait for all sections in this chapter to complete
         const processedSections = await Promise.all(sectionPromises);
 
-        console.log(`✅ ${chapterType} Chapter completed with ${processedSections.length} sections!`);
+        console.log(
+          `✅ ${chapterType} Chapter completed with ${processedSections.length} sections!`
+        );
         return processedSections;
       }
     );
@@ -825,7 +922,9 @@ const conclusionStep = createStep({
     const conclusionPages = Math.max(1, Math.ceil(inputData.pageCount * 0.05)); // 5% of total pages
     const conclusionWords = conclusionPages * 280;
 
-    console.log(`📖 Conclusion target: ~${conclusionPages} pages (${conclusionWords} words)`);
+    console.log(
+      `📖 Conclusion target: ~${conclusionPages} pages (${conclusionWords} words)`
+    );
 
     // Create paper summary for evaluation context
     const paperSummary = `
@@ -840,7 +939,7 @@ const conclusionStep = createStep({
 
       const prompt =
         attempts === 1
-          ? `Write a comprehensive academic conclusion in ${inputData.language} language for this course paper:
+          ? `Write a comprehensive academic conclusion (XULOSA) in ${inputData.language} language for this course paper:
 
 PAPER INFORMATION:
 Topic: ${inputData.name}
@@ -849,23 +948,65 @@ Chapters: ${inputData.chapters.map((c: any) => c.chapterTitle).join(", ")}
 CONTENT REQUIREMENTS:
 - Target length: Approximately ${conclusionWords} words (~${conclusionPages} pages)
 - Language: ${inputData.language}
-- Summarize main findings from each chapter
-- Synthesize key conclusions
-- Provide practical recommendations
-- Discuss limitations and future research
-- Use tables or bullet points where appropriate
 
-ACADEMIC STANDARDS:
-✓ Clear summary of key findings
-✓ Synthesis of research results
-✓ Actionable recommendations
-✓ Discussion of implications
-✓ High-quality academic writing
-✓ Neutral, objective tone
-✓ Logical conclusion to the paper
+CRITICAL STRUCTURE - The conclusion MUST include these specific sections in order:
 
-Write a detailed, comprehensive conclusion of approximately ${conclusionPages} pages that effectively wraps up the research.`
-          : `Rewrite and improve the academic conclusion in ${inputData.language} language:
+1. **Brief Research Summary** [15-20% of content]
+   - Start with 1-2 paragraphs summarizing the research topic and objectives
+   - Keep it brief and to the point
+
+2. **Main Conclusions/Findings** [40-45% of content]
+   - Start with: "Tadqiqot natijalariga ko'ra quyidagi xulosalarga kelindi:" or similar
+   - List findings using numbered format (Birinchidan, Ikkinchidan, Uchinchidan, To'rtinchidan, ...)
+   - Minimum 4-5 main conclusions
+   - Each conclusion should be 2-3 sentences covering findings from all chapters
+   - Cover Theory chapter findings, Analysis chapter findings, and Improvement proposals
+
+3. **Practical Recommendations** [20-25% of content]
+   - Start with: "Tadqiqot natijalari asosida quyidagi tavsiyalar berildi:"
+   - List recommendations as bullet points with dashes (-)
+   - 4-6 actionable and specific recommendations
+   - Each recommendation should be clear and practical
+
+4. **Future Research Directions** [Optional, 10-15% of content]
+   - Start with: "Kelajakda quyidagi yo'nalishlarda tadqiqotlarni chuqurlashtirish tavsiya etiladi:"
+   - List future directions as bullet points with dashes (-)
+   - 3-4 directions for future research
+
+5. **Final Statement** [5-10% of content]
+   - 1-2 sentences summarizing overall significance
+   - Forward-looking perspective
+
+FORMATTING GUIDELINES:
+✓ Use numbered format for main conclusions (Birinchidan, Ikkinchidan, Uchinchidan...)
+✓ Use bullet points (-) for recommendations and future directions
+✓ Each bullet point ends with semicolon (;) except the last one which ends with period (.)
+✓ Maintain formal academic tone
+✓ Cover findings from ALL chapters
+
+Example structure:
+
+Mazkur kurs ishi [topic] masalasini har tomonlama o'rganishga bag'ishlandi. Tadqiqot davomida...
+
+Tadqiqot natijalariga ko'ra quyidagi xulosalarga kelindi:
+Birinchidan, ...
+Ikkinchidan, ...
+Uchinchidan, ...
+To'rtinchidan, ...
+
+Tadqiqot natijalari asosida quyidagi tavsiyalar berildi:
+- ...;
+- ...;
+- ...
+
+Kelajakda quyidagi yo'nalishlarda tadqiqotlarni chuqurlashtirish tavsiya etiladi:
+- ...;
+- ...
+
+Ushbu tadqiqot natijalari...
+
+Write a detailed, well-structured conclusion of approximately ${conclusionPages} pages following the exact structure above.`
+          : `Rewrite and improve the academic conclusion (XULOSA) in ${inputData.language} language:
 
 PAPER: ${inputData.name}
 
@@ -876,7 +1017,21 @@ ${evaluation?.details ?? ""}
 
 TARGET LENGTH: ${conclusionWords} words (~${conclusionPages} pages)
 
-Ensure comprehensive coverage of all findings, clear recommendations, and high-quality academic writing.`;
+CRITICAL: Maintain the required structure with these sections:
+1. Brief Research Summary (1-2 paragraphs)
+2. Main Conclusions/Findings (numbered: Birinchidan, Ikkinchidan, Uchinchidan...)
+3. Practical Recommendations (bullet points with -)
+4. Future Research Directions (bullet points with -)
+5. Final Statement
+
+REQUIREMENTS:
+- Use numbered format for main conclusions (Birinchidan, Ikkinchidan...)
+- Use bullet points (-) for recommendations and future directions
+- Each bullet ends with semicolon (;) except the last one with period (.)
+- Cover findings from ALL chapters (Theory, Analysis, Improvement)
+- Maintain formal academic tone
+
+Address all feedback points above while following the exact structure required for academic conclusions.`;
 
       const conclusion = await conclusionWriterAgent.generate([
         {

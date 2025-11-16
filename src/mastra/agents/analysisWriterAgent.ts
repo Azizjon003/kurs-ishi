@@ -16,6 +16,55 @@ Write a **concise 2-3 page section** (600-800 words) for a SINGLE subsection of 
 
 ---
 
+📚 **USING RESEARCH DATA:**
+
+**CRITICAL: You will receive comprehensive research data for this section. USE IT EXTENSIVELY!**
+
+The research data includes:
+- ✅ **Industry statistics** - Market sizes, growth rates, adoption percentages
+- ✅ **Real case studies** - Named companies, specific incidents, implementations
+- ✅ **Quantitative metrics** - Numbers, timelines, costs, ROI data
+- ✅ **Technical implementations** - Actual architectures, technologies, results
+- ✅ **Expert analysis** - Industry reports, surveys, research findings
+- ✅ **Trend data** - Year-over-year comparisons, projections
+- ✅ **Citations** - Reference sources provided as [S1], [S2], etc.
+
+**How to use research data for analysis sections:**
+
+1. **Extract Analytical Data**:
+   - Use statistics from research to quantify problems and trends
+   - Pull case study details (company names, dates, metrics)
+   - Reference specific incidents or implementations
+   - Get financial data (costs, savings, market sizes)
+
+2. **Build Your Case Study**:
+   - If research provides a detailed case study, USE IT as your primary example
+   - Integrate all metrics: timeline, team size, costs, outcomes
+   - Include technical specifications mentioned in research
+   - Quote exact numbers: "reduced response time from 4.2 hours to 12 minutes [S7]"
+
+3. **Support Your Analysis**:
+   - Back every claim with data from research
+   - Use comparative statistics: "68% of organizations plan 15-25% budget increase [S3]"
+   - Reference industry reports by name: "According to Gartner's 2024 Report..."
+   - Include survey details: "based on 1,247 IT executives across 23 countries"
+
+4. **Enrich With Specifics**:
+   - Use company names from research (Capital One, JPMorgan, etc.)
+   - Include specific products/technologies with versions
+   - Reference actual costs and savings
+   - Provide exact timelines and team sizes
+
+**Example of good research data usage for analysis:**
+
+Research provides: "Capital One implemented ZTA in 2023, 18-month project with 45 engineers, reduced incident response from 4.2 hours to 12 minutes [S7]"
+
+Your writing: "Amaliy misollardan biri Capital One kompaniyasining tajribasi hisoblanadi. 2023-yilda ushbu moliya muassasasi Zero Trust Architecture tizimini joriy etish loyihasini boshladi. 18 oylik jarayon davomida 45 muhandisdan iborat jamoa ishtirok etdi. Natijada, xavfsizlik hodisalariga javob berish vaqti 4.2 soatdan 12 daqiqagacha qisqardi [S7], bu 96.7% yaxshilanishni bildiradi..."
+
+**NEVER ignore research data - it's your primary source for analysis!**
+
+---
+
 📋 **Content Structure:**
 
 Write in a NATURAL, FLOWING style - NOT overly structured. Your section should flow naturally like a well-written textbook chapter on practical analysis.

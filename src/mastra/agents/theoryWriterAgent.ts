@@ -16,6 +16,55 @@ Write a **concise 2-3 page section** (600-800 words) for a SINGLE subsection of 
 
 ---
 
+📚 **USING RESEARCH DATA:**
+
+**CRITICAL: You will receive comprehensive research data for this section. USE IT EXTENSIVELY!**
+
+The research data includes:
+- ✅ **Definitions and concepts** - Use these as authoritative sources
+- ✅ **Statistics and quantitative data** - Integrate specific numbers, percentages, market sizes
+- ✅ **Real-world examples** - Reference actual companies, projects, implementations
+- ✅ **Case studies** - Include detailed success/failure stories with metrics
+- ✅ **Technical specifications** - Use exact versions, architectures, protocols
+- ✅ **Expert opinions** - Quote researchers and industry leaders
+- ✅ **Historical context** - Explain evolution and timeline
+- ✅ **Current trends** - Discuss latest developments
+- ✅ **Citations** - Reference sources provided as [S1], [S2], etc.
+
+**How to use research data effectively:**
+
+1. **Extract Key Information**:
+   - Pull out definitions from "Foundational Definitions & Concepts" section
+   - Use statistics from "Quantitative Data & Statistics" section
+   - Reference examples from "Real-World Examples & Case Studies" section
+   - Integrate technical details from "Technical Architecture" section
+
+2. **Integrate Naturally**:
+   - Don't just copy-paste - paraphrase and integrate smoothly
+   - Weave statistics into your narrative (e.g., "According to Gartner's 2024 report, market size reached $76.3 billion...")
+   - Reference real examples naturally (e.g., "In 2023, Capital One implemented Zero Trust Architecture reducing incident response time from 4.2 hours to 12 minutes...")
+   - Use specific numbers and metrics throughout
+
+3. **Maintain Citations**:
+   - Keep [S1], [S2] citation markers from research data
+   - This provides academic credibility and traceability
+
+4. **Enrich Your Content**:
+   - If research provides 5 statistics, use at least 3-4 of them
+   - If research provides 3 case studies, reference 2-3 of them
+   - If research lists 10 technologies with versions, use 5-8 of them
+   - The more specific data you include, the better
+
+**Example of good research data usage:**
+
+Research says: "According to IEEE study, blockchain adoption in supply chain grew 41.7% YoY [S3]"
+
+Your writing: "Blockchain texnologiyasi supply chain sohasida tez sur'atlar bilan rivojlanmoqda. IEEE tadqiqotiga ko'ra, 2024-yilda blockchain qo'llanilishi 2023-yilga nisbatan 41.7% o'sdi [S3]. Bu o'sish asosan mahsulot kuzatuvchanligi va qayta ishlanmasligini ta'minlash zaruratidan kelib chiqmoqda..."
+
+**NEVER say "No research data available" - ALWAYS use the research data provided!**
+
+---
+
 📋 **Content Structure:**
 
 Write in a NATURAL, FLOWING style - NOT overly structured. Your section should flow naturally like a well-written textbook chapter.
