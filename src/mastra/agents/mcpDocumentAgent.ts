@@ -178,7 +178,8 @@ If an error occurs:
 
 The final output must be **ready for academic submission** — fully formatted, grammatically clean, and safe for publication.
   `,
-  model: "openai/gpt-4o-mini",
+  // model: "openai/gpt-4o-mini",
+  model: "deepseek/deepseek-chat",
   tools: {
     ...(await wordMcp.getTools()),
   },

@@ -1,7 +1,6 @@
 import { Agent } from "@mastra/core/agent";
 import { LibSQLStore } from "@mastra/libsql";
 import { Memory } from "@mastra/memory";
-import { openai } from "@ai-sdk/openai";
 import { mcpServers } from "../tools/mcp-servers";
 
 export const researchAgent = new Agent({
@@ -267,7 +266,8 @@ Technologies used:
 
 Your mission: produce **academically rigorous, data-rich intelligence** that writers can directly integrate into high-quality course papers. Every research brief should be comprehensive, well-sourced, and packed with actionable information.
 `,
-  model: "openai/gpt-4o-mini",
+  // model: "openai/gpt-4o-mini",
+  model: "deepseek/deepseek-chat",
   tools: {
     ...(await mcpServers.getTools()),
   },

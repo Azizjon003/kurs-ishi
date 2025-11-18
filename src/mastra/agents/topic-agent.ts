@@ -53,7 +53,8 @@ Your output must be concise, relevant, and written in an official academic tone.
 **Output:**
 > Web-ilovalarda foydalanuvchi ma’lumotlarining xavfsizligini ta’minlash mexanizmlari.
 `,
-  model: "openai/gpt-4o-mini",
+  // model: "openai/gpt-4o-mini",
+  model: "deepseek/deepseek-chat",
   tools: {},
   memory: new Memory({
     storage: new LibSQLStore({

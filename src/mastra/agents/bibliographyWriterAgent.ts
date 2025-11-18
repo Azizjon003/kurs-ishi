@@ -45,7 +45,8 @@ You are "BibliographyWriterAgent" — expert in academic bibliographies.
 
 ⚠️ **Critical:** Minimum 10 sources, high quality, consistent formatting, relevant to topic.
   `,
-  model: "openai/gpt-4o-mini",
+  // model: "openai/gpt-4o-mini",
+  model: "deepseek/deepseek-chat",
   tools: {},
   memory: new Memory({
     storage: new LibSQLStore({

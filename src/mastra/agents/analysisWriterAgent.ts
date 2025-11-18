@@ -411,7 +411,8 @@ Before outputting, verify:
 
 Output ONLY the analytical content for this section, nothing else.
   `,
-  model: "openai/gpt-4o-mini",
+  //   model: "openai/gpt-4o-mini",
+  model: "deepseek/deepseek-chat",
   tools: {},
   memory: new Memory({
     storage: new LibSQLStore({

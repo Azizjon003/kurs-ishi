@@ -182,30 +182,62 @@ IMPORTANT RESTRICTIONS:
 
 Structure the paper with meaningful section titles that cover the topic comprehensively.`;
 
-    const plan = await plannerAgent.generate(
-      [{ role: "user", content: prompt }],
-      {
-        structuredOutput: {
-          schema: z.object({
-            chapterTitle: z.string(),
-            chapters: z.array(
-              z.object({
-                chapterTitle: z.string(),
-                sections: z.array(
-                  z.object({
-                    title: z.string(),
-                  })
-                ),
-              })
-            ),
-          }),
-        },
-      }
-    );
+    const planPrompt = `${prompt}
+
+IMPORTANT: Return ONLY valid JSON in this exact format (no markdown, no code blocks, no explanations):
+{
+  "chapterTitle": "Main title",
+  "chapters": [
+    {
+      "chapterTitle": "Chapter I title",
+      "sections": [
+        {"title": "Section 1.1 title"},
+        {"title": "Section 1.2 title"},
+        {"title": "Section 1.3 title"}
+      ]
+    },
+    {
+      "chapterTitle": "Chapter II title",
+      "sections": [
+        {"title": "Section 2.1 title"},
+        {"title": "Section 2.2 title"},
+        {"title": "Section 2.3 title"}
+      ]
+    },
+    {
+      "chapterTitle": "Chapter III title",
+      "sections": [
+        {"title": "Section 3.1 title"},
+        {"title": "Section 3.2 title"},
+        {"title": "Section 3.3 title"}
+      ]
+    }
+  ]
+}`;
+
+    const plan = await plannerAgent.generate([
+      { role: "user", content: planPrompt },
+    ]);
+
+    // Clean up response - remove markdown code blocks if present
+    let planText = plan.text.trim();
+    if (planText.startsWith("```json")) {
+      planText = planText.replace(/^```json\s*\n?/, "").replace(/\n?```\s*$/, "");
+    } else if (planText.startsWith("```")) {
+      planText = planText.replace(/^```\s*\n?/, "").replace(/\n?```\s*$/, "");
+    }
+
+    let parsedPlan;
+    try {
+      parsedPlan = JSON.parse(planText);
+    } catch (error) {
+      console.error("Failed to parse plan JSON:", planText);
+      throw new Error(`Failed to parse planner response: ${error}`);
+    }
 
     return {
       name: inputData.name,
-      ...JSON.parse(plan.text),
+      ...parsedPlan,
       language: inputData.language,
       pageCount: inputData.pageCount,
       universityName: inputData.universityName,

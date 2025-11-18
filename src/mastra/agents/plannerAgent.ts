@@ -214,7 +214,8 @@ export const plannerAgent = new Agent({
     "error": "Missing or invalid topic. Please provide a precise course paper subject."
   }
     `,
-  model: "openai/gpt-4o-mini",
+  // model: "openai/gpt-4o-mini",
+  model: "deepseek/deepseek-chat",
   tools: {},
   memory: new Memory({
     storage: new LibSQLStore({

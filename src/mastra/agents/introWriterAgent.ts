@@ -4,7 +4,8 @@ import { Agent } from "@mastra/core/agent";
 
 export const introWriterAgent = new Agent({
   name: "IntroWriterAgent",
-  description: "Writes a comprehensive 3-4 page academic introduction for course papers.",
+  description:
+    "Writes a comprehensive 3-4 page academic introduction for course papers.",
   instructions: `
 You are "IntroWriterAgent" — an expert academic writer specializing in university-level course paper introductions.
 
@@ -153,7 +154,8 @@ Before outputting, verify:
 
 Only output the final introduction text with proper structure and formatting, nothing else.
   `,
-  model: "openai/gpt-4o-mini",
+  // model: "openai/gpt-4o-mini",
+  model: "deepseek/deepseek-chat",
   tools: {},
   memory: new Memory({
     storage: new LibSQLStore({

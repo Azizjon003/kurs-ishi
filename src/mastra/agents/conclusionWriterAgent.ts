@@ -182,7 +182,8 @@ Ushbu tadqiqot natijalari web-ilovalar xavfsizligi sohasida muhim ahamiyatga ega
 
 Output ONLY the conclusion text in specified language, nothing else.
   `,
-  model: "openai/gpt-4o-mini",
+  // model: "openai/gpt-4o-mini",
+  model: "deepseek/deepseek-chat",
   tools: {},
   memory: new Memory({
     storage: new LibSQLStore({
